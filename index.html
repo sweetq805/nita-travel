@@ -525,7 +525,50 @@ function ensureDays(t){const n=daysInclusive(t.start,t.end);t.days=t.days||[];wh
 function renderAll(){if(!state.trips[state.currentTripId])state.currentTripId=Object.keys(state.trips)[0];const t=currentTrip();ensureDays(t);$("topTripName").textContent=`${t.flag||"✈️"} ${t.name}`;$("topTripDate").textContent=`${fmtSlash(t.start)} — ${fmtSlash(t.end)}`;$("startDateValue").value=t.start;$("endDateValue").value=t.end;$("startDateBtn").textContent=fmtZh(t.start);$("endDateBtn").textContent=fmtZh(t.end);$("newTripName").value=t.name;renderTripList();renderDayTabs();renderSchedulePage();renderBookings();renderMapPage();renderExpenses();renderJournal();renderPlanning();persistTrips();applyLoggedOutWriteLock()}
 
 function renderTripList(){const box=$("tripList");box.innerHTML="";Object.values(state.trips).filter(t=>!supabaseSessionUser||t.supabase).forEach(t=>{const row=document.createElement("div");row.className="tripItem"+(t.id===state.currentTripId?" active":"");const canDelete=t.supabase?isSupabaseAdmin():true;row.innerHTML=`<button class="tripPick" type="button"><span>${t.flag||"✈️"} ${escapeHtml(t.name)}</span><span>${t.start.slice(5).replace("-","/")}—${t.end.slice(5).replace("-","/")}</span></button>${canDelete?'<button class="deleteBtn" type="button">刪除</button>':''}`;row.querySelector(".tripPick").onclick=()=>{state.currentTripId=t.id;state.currentDay="info";renderAll();$("tripBox").open=false;if(t.supabase)void fullCloudHydrateCurrentTrip()};const del=row.querySelector(".deleteBtn");if(del)del.onclick=()=>deleteTrip(t.id);box.appendChild(row)})}
-async function deleteTrip(id){const t=state.trips[id];if(t?.supabase){if(!isSupabaseAdmin()){toast("只有 ADMIN 可以刪除整趟旅程");return}const {error}=await supabaseClient.from("trips").delete().eq("id",id);if(error){toast("刪除失敗："+error.message);return}await refreshSupabaseAccountAndTrips();toast("已刪除雲端旅程");return}delete state.trips[id];const ids=Object.keys(state.trips);if(!ids.length){state.trips=clone(DEFAULT_TRIPS);state.currentTripId="bangkok"}else if(state.currentTripId===id)state.currentTripId=ids[0];state.currentDay="info";persistTrips();renderAll();toast("已刪除行程")}
+async function deleteTrip(id){
+  const t=state.trips[id];
+  if(t?.supabase){
+    if(!isSupabaseAdmin()){toast("只有 ADMIN 可以刪除整趟旅程");return}
+    if(!confirm(`確定要刪除「${t.name||"這趟旅行"}」？\n此操作會一併刪除這趟旅行的行程、照片、記帳、收藏與其他雲端資料，且無法復原。`))return;
+    const btns=[...document.querySelectorAll('.deleteBtn')];btns.forEach(b=>b.disabled=true);
+    toast("正在刪除整趟旅行…");
+    try{
+      // 先清理 Storage 檔案，再依 FK 關聯由子表往父表刪除。
+      const att=await supabaseClient.from("attachments").select("file_path").eq("trip_id",id);
+      if(att.error)throw new Error("讀取照片資料失敗："+att.error.message);
+      const paths=[...new Set((att.data||[]).map(x=>x.file_path).filter(Boolean))];
+      if(paths.length){
+        for(let i=0;i<paths.length;i+=100){
+          const r=await supabaseClient.storage.from("travel-images").remove(paths.slice(i,i+100));
+          if(r.error)console.warn("Storage cleanup warning",r.error.message);
+        }
+      }
+      const childTables=[
+        "attachments","itinerary_items","backup_plans","shopping_items","pocket_foods",
+        "map_places","bookings","expenses","collections","preparation_items",
+        "weather_snapshots","flights","entry_codes"
+      ];
+      for(const table of childTables){
+        const r=await supabaseClient.from(table).delete().eq("trip_id",id);
+        if(r.error)throw new Error(`${table}：${r.error.message}`);
+      }
+      // trip_days 可能被每日行程等資料引用，因此放在子表之後。
+      let r=await supabaseClient.from("trip_days").delete().eq("trip_id",id);
+      if(r.error)throw new Error("trip_days："+r.error.message);
+      r=await supabaseClient.from("trip_members").delete().eq("trip_id",id);
+      if(r.error)throw new Error("trip_members："+r.error.message);
+      r=await supabaseClient.from("trips").delete().eq("id",id);
+      if(r.error)throw new Error("trips："+r.error.message);
+      await refreshSupabaseAccountAndTrips();
+      toast("已完整刪除雲端旅程");
+    }catch(err){
+      console.error("deleteTrip failed",err);
+      toast("刪除失敗："+(err?.message||"未知錯誤"));
+    }finally{btns.forEach(b=>b.disabled=false)}
+    return;
+  }
+  delete state.trips[id];const ids=Object.keys(state.trips);if(!ids.length){state.trips=clone(DEFAULT_TRIPS);state.currentTripId="bangkok"}else if(state.currentTripId===id)state.currentTripId=ids[0];state.currentDay="info";persistTrips();renderAll();toast("已刪除行程")
+}
 
 function renderDayTabs(){const t=currentTrip(),box=$("dayTabs");box.innerHTML="";const info=document.createElement("button");info.className="dayTab"+(state.currentDay==="info"?" active":"");info.innerHTML=`<span class="tiny">INFO</span><span class="dow">重要資訊</span><span class="num">!</span><span class="mon">TRIP</span>`;info.onclick=()=>{state.currentDay="info";renderDayTabs();renderSchedulePage()};box.appendChild(info);for(let i=0;i<daysInclusive(t.start,t.end);i++){const iso=addDays(t.start,i),b=document.createElement("button");b.className="dayTab"+(state.currentDay===i?" active":"");b.innerHTML=`<span class="tiny">D${i+1}</span><span class="dow">${dow(iso)}</span><span class="num">${Number(iso.slice(8))}</span><span class="mon">${iso.slice(5,7)}月</span>`;b.onclick=()=>{state.currentDay=i;renderDayTabs();renderSchedulePage()};box.appendChild(b)}}
 
