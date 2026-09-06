@@ -413,13 +413,26 @@ function mergeCloudTripIntoState(t,permission,dayRows=[]){
 async function syncCloudTripsIntoApp(){
   if(!supabaseSessionUser)return;
   const ids=supabaseCloudTrips.map(t=>t.id); supabaseTripDays={};
+
+  // 正式雲端清單是唯一真實來源：把已從 Supabase 刪除、但仍殘留在 localStorage/state 的舊雲端旅程移除。
+  const idSet=new Set(ids);
+  Object.keys(state.trips).forEach(key=>{
+    const trip=state.trips[key];
+    if(trip?.supabase && !idSet.has(key)) delete state.trips[key];
+  });
+
   if(ids.length){
     const {data:rows,error}=await supabaseClient.from("trip_days").select("id,trip_id,day_date,day_number").in("trip_id",ids).order("day_number",{ascending:true});
     if(error)throw error;
     (rows||[]).forEach(r=>(supabaseTripDays[r.trip_id]||(supabaseTripDays[r.trip_id]=[])).push(r));
   }
   supabaseCloudTrips.forEach(t=>mergeCloudTripIntoState(t,cloudPermissionFor(t.id),supabaseTripDays[t.id]||[]));
-  if(ids.length && (!state.trips[state.currentTripId] || !ids.includes(state.currentTripId))) state.currentTripId=ids[0];
+
+  // 若目前選中的旅程已被刪除，切到第一個仍存在的雲端旅程；沒有雲端旅程時保留安全的本機 fallback，
+  // 但登入狀態下旅程清單仍只顯示雲端資料。
+  if(!state.trips[state.currentTripId] || (ids.length && !idSet.has(state.currentTripId))){
+    state.currentTripId=ids[0] || Object.keys(state.trips)[0] || "bangkok";
+  }
   persistTrips(); renderAll();
 }
 function renderCloudTrips(){
@@ -559,6 +572,10 @@ async function deleteTrip(id){
       if(r.error)throw new Error("trip_members："+r.error.message);
       r=await supabaseClient.from("trips").delete().eq("id",id);
       if(r.error)throw new Error("trips："+r.error.message);
+
+      // 立即清掉瀏覽器內的舊快取；接著再由 Supabase 重新同步一次正式清單。
+      delete state.trips[id];
+      persistTrips();
       await refreshSupabaseAccountAndTrips();
       toast("已完整刪除雲端旅程");
     }catch(err){
