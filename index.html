@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>小富婆 Nita｜環遊世界</title>
+<title>Nita Travel App</title>
 <style>
 :root{
   --bg:#F7F3EE;--card:#FFFDFC;--soft:#F1EBE5;--text:#59524C;--muted:#9A918A;
@@ -360,7 +360,14 @@ function escapeAttr(s=""){return escapeHtml(s)}
 function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show");clearTimeout(toast._t);toast._t=setTimeout(()=>t.classList.remove("show"),1500)}
 
 
-// ===== v12 Supabase 第二階段 =====
+// ===== 正式部署設定 =====
+// 只填 Supabase Project URL 與 Publishable/anon public key。
+// 絕對不要把 service_role、sb_secret_... 或資料庫密碼放進前端。
+const APP_CONFIG={
+  supabaseUrl:"https://xhcsiyjqdzixmissigjo.supabase.co",
+  supabasePublishableKey:"sb_publishable_f0ZgHjc1yjMva0ZzldT46Q_yC7LCt0i"
+};
+// 保留舊裝置 localStorage 作為相容 fallback；正式 GitHub Pages 會優先使用 APP_CONFIG。
 const SUPABASE_URL_STORAGE_KEY="nitaSupabaseProjectUrl";
 const SUPABASE_PUBLISHABLE_STORAGE_KEY="nitaSupabasePublishableKey";
 let supabaseClient=null;
@@ -378,8 +385,10 @@ function setSupabaseStatus(message,type=""){
   el.className="supabaseStatus"+(type?" "+type:"");
 }
 function buildSupabaseClient(){
-  const url=($("supabaseUrlInput")?.value||localStorage.getItem(SUPABASE_URL_STORAGE_KEY)||"").trim();
-  const key=($("supabaseKeyInput")?.value||localStorage.getItem(SUPABASE_PUBLISHABLE_STORAGE_KEY)||"").trim();
+  const configuredUrl=String(APP_CONFIG.supabaseUrl||"").trim();
+  const configuredKey=String(APP_CONFIG.supabasePublishableKey||"").trim();
+  const url=(configuredUrl&&!configuredUrl.startsWith("PASTE_")?configuredUrl:(localStorage.getItem(SUPABASE_URL_STORAGE_KEY)||"")).trim();
+  const key=(configuredKey&&!configuredKey.startsWith("PASTE_")?configuredKey:(localStorage.getItem(SUPABASE_PUBLISHABLE_STORAGE_KEY)||"")).trim();
   if(!url||!key){supabaseClient=null;return false}
   if(!window.supabase||!window.supabase.createClient){setSupabaseStatus("雲端服務載入失敗，請確認目前裝置有網路。","bad");return false}
   try{
@@ -461,11 +470,11 @@ async function refreshSupabaseAccountAndTrips(){
   try{await syncCloudTripsIntoApp()}catch(e){setSupabaseStatus("帳號已登入，但同步 trip_days 失敗："+e.message,"bad")}
 }
 function setupSupabaseStageOne(){
-  const url=localStorage.getItem(SUPABASE_URL_STORAGE_KEY)||"";
-  const key=localStorage.getItem(SUPABASE_PUBLISHABLE_STORAGE_KEY)||"";
-  if($("supabaseUrlInput"))$("supabaseUrlInput").value=url;
-  if($("supabaseKeyInput"))$("supabaseKeyInput").value=key;
-  if(url&&key)buildSupabaseClient();
+  const storedUrl=localStorage.getItem(SUPABASE_URL_STORAGE_KEY)||"";
+  const storedKey=localStorage.getItem(SUPABASE_PUBLISHABLE_STORAGE_KEY)||"";
+  if($("supabaseUrlInput"))$("supabaseUrlInput").value=storedUrl;
+  if($("supabaseKeyInput"))$("supabaseKeyInput").value=storedKey;
+  buildSupabaseClient();
   renderCloudTrips();
   $("saveSupabaseConfigBtn").onclick=()=>{
     const u=$("supabaseUrlInput").value.trim(),k=$("supabaseKeyInput").value.trim();
