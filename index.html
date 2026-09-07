@@ -177,8 +177,7 @@ input,textarea,select{outline:none}
 }
 .globalHeaderToggle:active{transform:scale(.92)}
 .app.showGlobalHeaderToggle .globalHeaderToggle{display:flex}
-.app.headerCollapsed .header,
-.app.headerCollapsed .dayTabs{display:none!important}
+.app.headerCollapsed .header{display:none!important}
 .app.headerCollapsed .main{padding-top:38px}
 .app.headerCollapsed .globalHeaderToggle{top:2px}
 
@@ -232,6 +231,10 @@ input,textarea,select{outline:none}
 #accountPage .supabaseStatus{white-space:pre-line}
 #accountPage.loggedOut .accountHero{display:none}
 #accountPage.loggedOut #supabaseLogoutBtn{display:none!important}
+#accountPage.loggedOut #adminMembers{display:none!important}
+#accountPage.loggedOut .adminMembers{display:none!important}
+#accountPage.loggedOut #cloudTripList{display:none!important}
+
 #accountPage.loggedOut #supabaseAccountStatus{display:none!important}
 #accountPage.loggedIn #supabaseEmailInput,#accountPage.loggedIn #supabasePasswordInput,#accountPage.loggedIn #supabaseLoginBtn,#accountPage.loggedIn .field:has(#supabaseEmailInput),#accountPage.loggedIn .field:has(#supabasePasswordInput){display:none!important}
 #accountPage.loggedIn #registerMemberBtn{display:none!important}
@@ -410,11 +413,546 @@ body.loggedOutMode input:disabled,body.loggedOutMode textarea:disabled,body.logg
 .registerMemberBtn:active{transform:scale(.97)}
 .registerNote,.addMemberNote{font-size:10px;color:var(--muted);line-height:1.55;margin:7px 2px 0}
 .memberAvatar{cursor:pointer;-webkit-tap-highlight-color:transparent}
-.memberAvatar input{display:none!important}
+.memberAvatar{
+  user-select:none!important;
+  -webkit-user-select:none!important;
+  touch-action:manipulation!important;
+}
+.memberAvatar img,.memberAvatarFallback{pointer-events:none!important}
+.memberAvatar input[type="file"]{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  opacity:0!important;
+  display:block!important;
+  cursor:pointer!important;
+  z-index:5!important;
+  font-size:100px!important;
+  overflow:hidden!important;
+  -webkit-appearance:none!important;
+}
 .memberAvatar.uploading{opacity:.55;pointer-events:none}
 .hotelSaveState{font-size:9px;color:var(--muted);margin-top:4px}
 
+
+/* 登出時禁止任何殘留的管理者資料出現在畫面 */
+body.loggedOutMode #adminMembers,
+#accountPage.loggedOut #adminMembers{display:none!important}
+
+
+/* ===== FINAL HARD GUARANTEES: 登入 / 註冊 / 隱私 / 頭像 ===== */
+
+/* 未登入時登入與註冊永遠可操作 */
+body.loggedOutMode #supabaseEmailInput,
+body.loggedOutMode #supabasePasswordInput,
+body.loggedOutMode #supabaseLoginBtn,
+body.loggedOutMode #registerMemberBtn,
+body.loggedOutMode #registerMemberOverlay input,
+body.loggedOutMode #registerMemberOverlay button{
+  pointer-events:auto!important;
+  opacity:1!important;
+}
+
+/* 登出時會員管理資料無條件消失 */
+body.loggedOutMode #adminMembers,
+#accountPage.loggedOut #adminMembers{
+  display:none!important;
+  visibility:hidden!important;
+}
+
+/* 頭像 file input 真正覆蓋整個圓框，手機點圓框直接叫相簿 */
+.memberAvatar{
+  position:relative!important;
+  overflow:hidden!important;
+}
+.memberAvatar input[type="file"]{
+  position:absolute!important;
+  inset:0!important;
+  width:100%!important;
+  height:100%!important;
+  display:block!important;
+  opacity:0!important;
+  z-index:20!important;
+  cursor:pointer!important;
+  pointer-events:auto!important;
+}
+.memberAvatar img,
+.memberAvatarFallback{
+  pointer-events:none!important;
+}
+
+
+/* =========================================================
+   NITA FINAL CARD UI — timeline / backup / prepare / collect
+   ========================================================= */
+.timelineList{position:relative;padding-left:74px}
+.timelineList:before{content:"";position:absolute;left:32px;top:12px;bottom:12px;border-left:2px dashed #D9AAA7}
+.timelineItem{position:relative;margin-bottom:14px}
+.timelineTime{position:absolute;left:-74px;top:18px;width:62px;height:42px;border-radius:999px;background:#FFFDFC;border:2px solid #D3A9A6;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#59524C}
+.timelineItem:before{content:"";position:absolute;left:-43px;top:38px;width:10px;height:10px;border-radius:50%;background:#D3A9A6;border:3px solid #F7F3EE}
+.cleanItineraryCard{background:#FFFDFB;border:1px solid #E9DDD6;border-radius:20px;box-shadow:0 10px 24px rgba(91,75,65,.08);padding:15px;margin-bottom:12px;scroll-margin-top:18px}
+.cleanItineraryHead{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:start}
+.cleanItineraryTitle{font-size:17px;font-weight:800;color:#514B47;line-height:1.35;word-break:break-word}
+.cleanItinerarySub{font-size:11px;color:#9A918A;margin-top:4px;line-height:1.55}
+.cleanActionRow{display:flex;align-items:center;gap:3px;flex-wrap:nowrap}
+.iconAction{width:34px;height:34px;border:0!important;background:transparent!important;box-shadow:none!important;color:#8E8781;font-size:19px;display:grid;place-items:center;padding:0}
+.iconAction:disabled{opacity:.22}
+.cleanBody{padding-top:12px}
+.cleanBody.hidden{display:none}
+.cleanDesc{font-size:13px;line-height:1.7;color:#625A55;background:#F4EFEA;border-radius:14px;padding:11px 12px;margin-top:8px;white-space:pre-wrap}
+.cleanDesc:empty{display:none}
+.cleanLinks{display:flex;flex-direction:column;gap:7px;margin-top:9px}
+.cleanLink{display:flex;align-items:center;gap:8px;background:#F2EDE8;border-radius:12px;padding:9px 11px;color:#59524C;text-decoration:none;font-size:11px;word-break:break-all}
+.cleanPhotos{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:10px}
+.cleanPhotos .thumb{aspect-ratio:1.15/1}
+.cleanEditForm .field{margin-top:9px}
+.cleanEditForm .oneLineTitle{width:100%}
+.cleanEditForm .twoEdit{display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px}
+.cleanEditForm .editPhotoGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}
+.backupSummary{display:grid;gap:7px;padding:9px 0 2px}
+.backupSummary.hidden{display:none}
+.backupSummaryItem{display:grid;grid-template-columns:48px minmax(0,1fr);gap:9px;align-items:center;background:#F5F0EB;border-radius:13px;padding:7px 9px}
+.backupSummaryItem.noPhoto{grid-template-columns:1fr}
+.backupSummaryThumb{width:48px;height:48px;border-radius:10px;object-fit:cover;background:#EDE5DF}
+.backupSummaryName{font-size:12px;font-weight:700;color:#59524C;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.prepareToolbar,.collectionToolbar{display:flex;justify-content:flex-end;margin-bottom:10px}
+.prepareList{display:grid;gap:9px}
+.prepareItem{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;background:#FFFDFB;border:1px solid #EBE0D9;border-radius:16px;padding:12px;box-shadow:0 7px 17px rgba(91,75,65,.06)}
+.prepareCheck{width:24px;height:24px;accent-color:#D3A9A6}
+.prepareText{font-size:13px;color:#59524C;line-height:1.5;word-break:break-word}
+.prepareText.done{text-decoration:line-through;opacity:.55}
+.prepareActions{display:flex;gap:1px}
+.collectionGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.collectionCard{background:#FFFDFB;border:1px solid #E8DDD6;border-radius:18px;overflow:hidden;box-shadow:0 9px 20px rgba(91,75,65,.07)}
+.collectionPhotoHero{position:relative;aspect-ratio:1.15/1;background:#EEE6E0;overflow:hidden}
+.collectionPhotoHero img{width:100%;height:100%;object-fit:cover;display:block}
+.collectionPhotoCount{position:absolute;right:7px;bottom:7px;background:rgba(255,255,255,.9);border-radius:999px;padding:4px 7px;font-size:9px;color:#625A55}
+.collectionCardBody{padding:11px}
+.collectionTitle{font-size:13px;font-weight:800;color:#544D48;line-height:1.4}
+.collectionNote{font-size:10px;color:#8F8780;line-height:1.55;margin-top:5px;white-space:pre-wrap}
+.collectionActions{display:flex;justify-content:flex-end;gap:2px;margin-top:7px}
+.viewerCounter{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);background:rgba(255,255,255,.88);padding:5px 9px;border-radius:999px;font-size:10px;color:#514B47}
+.headerCompactLabel{display:none}
+.app.headerCollapsed .header{display:none!important}
+.app.headerCollapsed .dayTabs{display:flex!important}
+.app.headerCollapsed .main{padding-top:0!important}
+@media(max-width:420px){
+  .timelineList{padding-left:66px}
+  .timelineTime{left:-66px;width:56px;font-size:12px}
+  .timelineItem:before{left:-38px}
+  .collectionGrid{grid-template-columns:1fr 1fr}
+  .cleanItineraryCard{padding:13px}
+}
+
+
+/* ===== FINAL v2：日期三行 / 付款人分頁 / 主畫面圖示設定 ===== */
+.dayTab.dayDateTab{
+  height:82px;
+  padding:0;
+  justify-content:center;
+  gap:3px;
+}
+.dayTab .dayLine1{font-size:10px;font-weight:700;line-height:1.1}
+.dayTab .dayLine2{font-size:15px;font-weight:800;line-height:1.15}
+.dayTab .dayLine3{font-size:11px;font-weight:700;line-height:1.1}
+
+.payerTabs{
+  display:flex;
+  gap:7px;
+  overflow-x:auto;
+  padding:1px 2px 9px;
+  margin-bottom:8px;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+}
+.payerTabs::-webkit-scrollbar{display:none}
+.payerTab{
+  flex:0 0 auto;
+  border:1px solid var(--line);
+  background:#FFFDFB;
+  color:var(--text);
+  border-radius:999px;
+  padding:9px 15px;
+  font-size:11px;
+  font-weight:800;
+  box-shadow:none;
+}
+.payerTab.active{
+  background:var(--active);
+  color:#fff;
+  border-color:var(--active);
+  box-shadow:0 3px 0 var(--activeDeep);
+}
+.payerStatsSingle{margin-bottom:12px}
+.payerStatsSingle .payerStats{display:grid!important}
+
+.homeIconPanel{
+  margin-top:14px;
+  background:#FFFDFB;
+  border:1px solid #E9DED7;
+  border-radius:22px;
+  padding:14px;
+  box-shadow:var(--shadow);
+}
+.homeIconHead{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+}
+.homeIconTitle{
+  font-size:15px;
+  font-weight:800;
+  color:#59524C;
+}
+.homeIconBody{
+  display:grid;
+  grid-template-columns:76px minmax(0,1fr);
+  gap:12px;
+  align-items:center;
+  margin-top:12px;
+}
+.homeIconPreview{
+  width:76px;
+  height:76px;
+  border-radius:20px;
+  background:#F0EAE4;
+  border:1px solid #E6D8D1;
+  overflow:hidden;
+  display:grid;
+  place-items:center;
+  font-size:10px;
+  color:var(--muted);
+}
+.homeIconPreview img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  display:block;
+}
+.homeIconUpload{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-height:44px;
+  padding:10px 14px;
+  border-radius:14px;
+  background:var(--active);
+  color:#fff;
+  font-size:11px;
+  font-weight:800;
+  box-shadow:0 3px 0 var(--activeDeep);
+}
+.homeIconUpload input{display:none}
+.homeIconNote{
+  font-size:9px;
+  line-height:1.55;
+  color:var(--muted);
+  margin-top:7px;
+}
+.homeIconReset{
+  margin-top:8px;
+  border:0;
+  background:transparent;
+  color:#8B6663;
+  font-size:10px;
+  text-decoration:underline;
+}
+
+
+/* ===== FINAL v3：空白頁 / Header收合 / 圖片摘要 / 編輯照片預覽 ===== */
+.srOnly{
+  position:absolute!important;width:1px!important;height:1px!important;
+  padding:0!important;margin:-1px!important;overflow:hidden!important;
+  clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important;
+}
+.cleanPhotos .thumb{position:relative;overflow:hidden;background:#F0EAE4}
+.cleanPhotos .thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.cleanPhotos .thumb::after{display:none!important}
+.cleanPhotos .thumb span{display:none!important}
+
+.galleryCollapseSummary{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:7px;
+  margin:10px 0 2px;
+}
+.galleryCollapseSummary.hidden{display:none}
+.gallerySummaryItem{
+  min-width:0;
+}
+.gallerySummaryItem img{
+  width:100%;
+  aspect-ratio:1/1;
+  object-fit:cover;
+  border-radius:12px;
+  display:block;
+  background:#EEE7E1;
+}
+.gallerySummaryName{
+  margin-top:4px;
+  font-size:8px;
+  line-height:1.25;
+  color:#8F8780;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.gallerySummaryEmpty{
+  grid-column:1/-1;
+  font-size:10px;
+  color:var(--muted);
+  padding:4px 0;
+}
+
+.cleanEditForm .editPhotoGrid,
+.cleanEditForm .photo3{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:8px!important;
+  margin-top:8px!important;
+  min-height:0;
+}
+.cleanEditForm .galleryItem{
+  position:relative;
+  min-width:0;
+}
+.cleanEditForm .galleryItem .thumb{
+  aspect-ratio:1/1!important;
+  border-radius:12px!important;
+  overflow:hidden!important;
+  background:#EEE7E1!important;
+}
+.cleanEditForm .galleryItem .thumb img{
+  width:100%!important;
+  height:100%!important;
+  object-fit:cover!important;
+  display:block!important;
+}
+.cleanEditForm .cloudAssetEmpty{
+  grid-column:1/-1;
+  padding:8px 0;
+  font-size:10px;
+  color:var(--muted);
+}
+.globalHeaderToggle{
+  z-index:80!important;
+  pointer-events:auto!important;
+}
+.app.showGlobalHeaderToggle .globalHeaderToggle{display:flex!important}
+
+
+/* ===== FINAL v4：每日行程整區收合摘要 / 單筆刪除修正 ===== */
+.scheduleSectionCard{
+  background:#FFFDFB;
+  border:1px solid #E9DED7;
+  border-radius:22px;
+  padding:14px;
+  box-shadow:var(--shadow);
+}
+.scheduleSectionCard .sectionHead{
+  margin-bottom:4px;
+}
+.scheduleSummary{
+  display:grid;
+  gap:7px;
+  padding:9px 0 2px;
+}
+.scheduleSummary.hidden{display:none}
+.scheduleSummaryItem{
+  display:grid;
+  grid-template-columns:48px minmax(0,1fr);
+  gap:9px;
+  align-items:center;
+  background:#F5F0EB;
+  border-radius:13px;
+  padding:7px 9px;
+}
+.scheduleSummaryItem.noPhoto{grid-template-columns:1fr}
+.scheduleSummaryThumb{
+  width:48px;
+  height:48px;
+  border-radius:10px;
+  object-fit:cover;
+  background:#EDE5DF;
+}
+.scheduleSummaryName{
+  font-size:12px;
+  font-weight:700;
+  color:#59524C;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+
+/* ===== FINAL v5：導航 / 收合小時間軸 / 準備刪除 / 地圖文字清理 ===== */
+.navMiniBtn{
+  flex:0 0 auto;
+  min-width:46px;
+  height:32px;
+  border:0!important;
+  border-radius:11px;
+  background:#F0EAE4!important;
+  color:#625A55!important;
+  box-shadow:none!important;
+  padding:0 9px;
+  font-size:10px;
+  font-weight:800;
+  white-space:nowrap;
+}
+.navMiniBtn:active{transform:translateY(1px)}
+
+.scheduleSummaryItem{
+  position:relative;
+  grid-template-columns:56px 48px minmax(0,1fr) auto!important;
+  gap:8px!important;
+  padding:7px 8px!important;
+}
+.scheduleSummaryItem.noPhoto{
+  grid-template-columns:56px minmax(0,1fr) auto!important;
+}
+.scheduleMiniTime{
+  position:relative;
+  min-height:48px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding-left:7px;
+  font-size:9px;
+  font-weight:800;
+  color:#746C66;
+}
+.scheduleMiniTime:before{
+  content:"";
+  position:absolute;
+  left:2px;
+  top:-9px;
+  bottom:-9px;
+  border-left:1.5px dashed #D3A9A6;
+}
+.scheduleMiniTime:after{
+  content:"";
+  position:absolute;
+  left:-2px;
+  top:50%;
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:#D3A9A6;
+  border:2px solid #F5F0EB;
+  transform:translateY(-50%);
+}
+.scheduleSummaryThumb{width:48px!important;height:48px!important}
+
+.backupSummaryItem{
+  grid-template-columns:48px minmax(0,1fr) auto!important;
+}
+.backupSummaryItem.noPhoto{
+  grid-template-columns:minmax(0,1fr) auto!important;
+}
+.backupSummaryNav,
+.scheduleSummaryNav{justify-self:end}
+
+.prepareActions .iconAction[data-act="delete"]{
+  pointer-events:auto!important;
+  cursor:pointer!important;
+}
+.mapPageTechnicalHint{display:none!important}
+
+
+/* ===== FINAL v8：收藏 / 準備刪除按鈕觸控修正 ===== */
+.collectionActions,
+.prepareActions{
+  position:relative!important;
+  z-index:30!important;
+  pointer-events:auto!important;
+}
+.collectionActions [data-act="delete"],
+.prepareActions [data-act="delete"]{
+  position:relative!important;
+  z-index:50!important;
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+  -webkit-tap-highlight-color:transparent!important;
+  cursor:pointer!important;
+  user-select:none!important;
+  -webkit-user-select:none!important;
+}
+
+
+/* ===== FINAL v9：編輯框照片同步刪除 + 入境條碼刪除/文字 ===== */
+.qrGrid{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:10px!important;
+}
+.qrItem{
+  min-width:0;
+}
+.qrBox{
+  position:relative!important;
+  aspect-ratio:1!important;
+  border-radius:16px!important;
+  background:var(--soft)!important;
+  display:grid!important;
+  place-items:center!important;
+  overflow:hidden!important;
+}
+.qrBox img{
+  width:100%!important;
+  height:100%!important;
+  object-fit:contain!important;
+}
+.qrUploadInput{
+  position:absolute!important;
+  inset:0!important;
+  opacity:0!important;
+  cursor:pointer!important;
+}
+.qrDeleteBtn{
+  position:absolute!important;
+  top:7px!important;
+  right:7px!important;
+  z-index:6!important;
+  width:30px!important;
+  height:30px!important;
+  border:0!important;
+  border-radius:50%!important;
+  background:rgba(255,253,251,.94)!important;
+  color:#8F6E6B!important;
+  font-size:20px!important;
+  line-height:1!important;
+  box-shadow:0 2px 8px rgba(80,65,55,.14)!important;
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+}
+.qrLabelInput{
+  width:100%!important;
+  box-sizing:border-box!important;
+  margin-top:7px!important;
+  min-height:38px!important;
+  border:0!important;
+  border-radius:12px!important;
+  background:#F0EAE4!important;
+  color:#59524C!important;
+  padding:8px 10px!important;
+  font:inherit!important;
+  font-size:11px!important;
+  outline:none!important;
+}
+.qrLabelInput::placeholder{color:#A69D96!important}
+
 </style>
+
+<link rel="apple-touch-icon" sizes="180x180" href="./apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="./icon-512.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Nita Travel">
+
 </head>
 <body>
 <!-- Nita Travel STABLE：簡化會員 + 每日飯店雲端儲存 + 成員頭像 + 永久排序 -->
@@ -454,7 +992,7 @@ body.loggedOutMode input:disabled,body.loggedOutMode textarea:disabled,body.logg
           <input class="input" id="mapSearchInput" placeholder="輸入店名或正確地址">
           <button class="mapSearchBtn" id="mapSearchBtn" type="button">搜尋</button>
         </div>
-        <div class="mapTypeAddRow"><input class="input" id="newMarkerType" placeholder="新增地標種類，例如：夜市"><div class="mapTypeButtons"><button class="smallBtn" id="addMarkerTypeBtn" type="button">＋ 新增種類</button><button class="smallBtn deleteTypeBtn" id="deleteMarkerTypeBtn" type="button">－ 刪除種類</button></div></div><div class="searchHint">輸入店名或完整地址即可。搜尋改用 Google Places，可直接取得店名、完整地址、Place ID 與座標。</div>
+        <div class="mapTypeAddRow"><input class="input" id="newMarkerType" placeholder="新增地標種類，例如：夜市"><div class="mapTypeButtons"><button class="smallBtn" id="addMarkerTypeBtn" type="button">＋ 新增種類</button><button class="smallBtn deleteTypeBtn" id="deleteMarkerTypeBtn" type="button">－ 刪除種類</button></div></div>
         <div class="mapStatus" id="mapStatus"></div>
         <div class="searchResults" id="mapSearchResults"></div>
       </div>
@@ -498,6 +1036,24 @@ body.loggedOutMode input:disabled,body.loggedOutMode textarea:disabled,body.logg
       <div class="memberHelp">點擊圓形頭像可直接從手機相簿更換照片；點右側 › 可設定角色、狀態與每趟旅行權限。新增成員前，對方需先完成會員註冊。</div>
       <div id="memberList" class="memberList"></div>
     </div>
+
+    <div class="homeIconPanel" id="homeIconPanel" hidden>
+      <div class="homeIconHead">
+        <div class="homeIconTitle">iPhone 主畫面圖示</div>
+      </div>
+      <div class="homeIconBody">
+        <div class="homeIconPreview" id="homeIconPreview">尚未設定</div>
+        <div>
+          <label class="homeIconUpload">從手機相簿選擇圖片
+            <input id="homeIconInput" type="file" accept="image/*">
+          </label>
+          <div class="homeIconNote">
+            圖片會儲存在這台裝置的瀏覽器。設定後若要讓 iPhone 主畫面更新圖示，需先移除舊的主畫面捷徑，再用 Safari「分享 → 加入主畫面」重新加入。
+          </div>
+          <button class="homeIconReset" id="homeIconResetBtn" type="button">恢復預設圖示</button>
+        </div>
+      </div>
+    </div>
   </section>
 </main>
 </div>
@@ -515,7 +1071,7 @@ body.loggedOutMode input:disabled,body.loggedOutMode textarea:disabled,body.logg
 
 <div class="overlay" id="formOverlay"><div class="modal"><div class="modalTitle" id="formTitle"></div><div id="formBody"></div><div class="modalActions"><button class="cancel" id="formCancel">取消</button><button class="confirm" id="formConfirm">確認新增</button></div></div></div>
 
-<div class="overlay" id="viewerOverlay"><div class="viewer"><img class="viewerImg" id="viewerImg" alt=""><button class="viewerBtn viewerClose" id="viewerClose">×</button><button class="viewerBtn viewerPrev" id="viewerPrev">‹</button><button class="viewerBtn viewerNext" id="viewerNext">›</button></div></div>
+<div class="overlay" id="viewerOverlay"><div class="viewer"><img class="viewerImg" id="viewerImg" alt=""><button class="viewerBtn viewerClose" id="viewerClose">×</button><button class="viewerBtn viewerPrev" id="viewerPrev">‹</button><button class="viewerBtn viewerNext" id="viewerNext">›</button><div class="viewerCounter" id="viewerCounter"></div></div></div>
 
 <div class="overlay" id="memberSettingsOverlay">
   <div class="modal">
@@ -733,18 +1289,56 @@ function setupSupabaseStageOne(){
     $("supabaseSummaryState").textContent="尚未登入";setSupabaseStatus("已清除雲端設定。");renderCloudTrips();
   };
   $("supabaseLoginBtn").onclick=async()=>{
-    if(!supabaseClient&&!buildSupabaseClient()){setSupabaseStatus("雲端服務尚未完成設定。","bad");return}
-    const email=$("supabaseEmailInput").value.trim(),password=$("supabasePasswordInput").value;
-    if(!email||!password){setSupabaseStatus("Email 與 Password 都要填。","bad");return}
+    if(supabaseSessionUser)return;
+    if(!supabaseClient&&!buildSupabaseClient()){
+      setSupabaseStatus("雲端服務尚未完成設定。","bad");
+      return;
+    }
+
+    const email=$("supabaseEmailInput").value.trim().toLowerCase();
+    const password=$("supabasePasswordInput").value;
+
+    if(!email||!password){
+      setSupabaseStatus("Email 與密碼都要填。","bad");
+      return;
+    }
+
+    clearSensitiveAccountUI();
     setSupabaseStatus("登入中…");
+
     const {error}=await supabaseClient.auth.signInWithPassword({email,password});
-    if(error){setSupabaseStatus("登入失敗："+error.message,"bad");return}
-    $("supabasePasswordInput").value="";await refreshSupabaseAccountAndTrips();
+    if(error){
+      setSupabaseStatus("登入失敗："+error.message,"bad");
+      supabaseSessionUser=null;
+      supabaseProfile=null;
+      refreshAccountUI();
+      return;
+    }
+
+    $("supabasePasswordInput").value="";
+    await refreshSupabaseAccountAndTrips();
   };
   $("supabaseLogoutBtn").onclick=async()=>{
-    if(supabaseClient)await supabaseClient.auth.signOut();
-    supabaseSessionUser=null;supabaseProfile=null;supabaseCloudTrips=[];supabaseTripPermissions={};
-    $("supabaseSummaryState").textContent="尚未登入";setSupabaseStatus("已登出。");renderCloudTrips();refreshAccountUI();
+    clearSensitiveAccountUI();
+
+    if(supabaseClient){
+      try{await supabaseClient.auth.signOut()}catch(_){}
+    }
+
+    supabaseSessionUser=null;
+    supabaseProfile=null;
+    supabaseCloudTrips=[];
+    supabaseTripPermissions={};
+    supabaseTripDays={};
+    supabaseFamilyId=null;
+
+    clearSensitiveAccountUI();
+    $("supabaseSummaryState").textContent="尚未登入";
+    setSupabaseStatus("已登出。");
+    renderCloudTrips();
+    refreshAccountUI();
+
+    if($("supabasePasswordInput"))$("supabasePasswordInput").value="";
   };
   $("refreshCloudTripsBtn").onclick=refreshSupabaseAccountAndTrips;
   if(supabaseClient){supabaseClient.auth.getSession().then(({data})=>{if(data?.session?.user)refreshSupabaseAccountAndTrips()}).catch(()=>{})}
@@ -764,6 +1358,7 @@ function fmtSlash(iso){return iso.replaceAll("-","/")}
 function addDays(iso,n){const d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+n);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
 function daysInclusive(a,b){return Math.max(1,Math.round((new Date(b+"T12:00:00")-new Date(a+"T12:00:00"))/86400000)+1)}
 function dow(iso){return ["SUN","MON","TUE","WED","THU","FRI","SAT"][new Date(iso+"T12:00:00").getDay()]}
+function dowZh(iso){return ["日","一","二","三","四","五","六"][new Date(iso+"T12:00:00").getDay()]}
 function ensureDays(t){const n=daysInclusive(t.start,t.end);t.days=t.days||[];while(t.days.length<n)t.days.push({schedule:[],backup:[],shopping:[],pocketFood:[],hotel:""});t.days=t.days.slice(0,n);t.days.forEach(d=>{d.schedule=d.schedule||[];d.backup=d.backup||[];d.shopping=d.shopping||[];d.pocketFood=d.pocketFood||[];d.hotel=d.hotel||""})}
 
 function renderAll(){if(!state.trips[state.currentTripId])state.currentTripId=Object.keys(state.trips)[0];const t=currentTrip();ensureDays(t);$("topTripName").textContent=`${t.flag||"✈️"} ${t.name}`;$("topTripDate").textContent=`${fmtSlash(t.start)} — ${fmtSlash(t.end)}`;$("startDateValue").value=t.start;$("endDateValue").value=t.end;$("startDateBtn").textContent=fmtZh(t.start);$("endDateBtn").textContent=fmtZh(t.end);$("newTripName").value=t.name;renderTripList();renderDayTabs();renderSchedulePage();renderBookings();renderMapPage();renderExpenses();renderJournal();renderPlanning();persistTrips();applyLoggedOutWriteLock()}
@@ -818,7 +1413,37 @@ async function deleteTrip(id){
   delete state.trips[id];const ids=Object.keys(state.trips);if(!ids.length){state.trips=clone(DEFAULT_TRIPS);state.currentTripId="bangkok"}else if(state.currentTripId===id)state.currentTripId=ids[0];state.currentDay="info";persistTrips();renderAll();toast("已刪除行程")
 }
 
-function renderDayTabs(){const t=currentTrip(),box=$("dayTabs");box.innerHTML="";const info=document.createElement("button");info.className="dayTab"+(state.currentDay==="info"?" active":"");info.innerHTML=`<span class="tiny">INFO</span><span class="dow">重要資訊</span><span class="num">!</span><span class="mon">TRIP</span>`;info.onclick=()=>{state.currentDay="info";renderDayTabs();renderSchedulePage()};box.appendChild(info);for(let i=0;i<daysInclusive(t.start,t.end);i++){const iso=addDays(t.start,i),b=document.createElement("button");b.className="dayTab"+(state.currentDay===i?" active":"");b.innerHTML=`<span class="tiny">D${i+1}</span><span class="dow">${dow(iso)}</span><span class="num">${Number(iso.slice(8))}</span><span class="mon">${iso.slice(5,7)}月</span>`;b.onclick=()=>{state.currentDay=i;renderDayTabs();renderSchedulePage()};box.appendChild(b)}}
+function renderDayTabs(){
+  const t=currentTrip(),box=$("dayTabs");
+  box.innerHTML="";
+
+  const info=document.createElement("button");
+  info.className="dayTab"+(state.currentDay==="info"?" active":"");
+  info.innerHTML=`<span class="tiny">INFO</span><span class="dow">重要資訊</span><span class="num">!</span><span class="mon">TRIP</span>`;
+  info.onclick=()=>{
+    state.currentDay="info";
+    renderDayTabs();
+    renderSchedulePage();
+  };
+  box.appendChild(info);
+
+  for(let i=0;i<daysInclusive(t.start,t.end);i++){
+    const iso=addDays(t.start,i);
+    const b=document.createElement("button");
+    b.className="dayTab dayDateTab"+(state.currentDay===i?" active":"");
+    b.innerHTML=`
+      <span class="dayLine1">Day${i+1}</span>
+      <span class="dayLine2">${iso.slice(5).replace("-","/")}</span>
+      <span class="dayLine3">${dowZh(iso)}</span>
+    `;
+    b.onclick=()=>{
+      state.currentDay=i;
+      renderDayTabs();
+      renderSchedulePage();
+    };
+    box.appendChild(b);
+  }
+}
 
 
 const dayHotelSaveTimers={};
@@ -889,7 +1514,61 @@ async function refreshWeatherFromNetwork(){
 
 function renderWeather(){const t=currentTrip(),box=$("weatherStrip");box.innerHTML="";(t.weather||[]).slice(0,20).forEach((w,i)=>{const iso=addDays(t.start,i),c=document.createElement("div");c.className="weatherCard";c.innerHTML=`<div class="d">${iso.slice(5).replace("-","/")} ${dow(iso)}</div><div class="i">${w[0]}</div><div class="h">${w[1]}°</div><div class="l">${w[2]}°</div>`;box.appendChild(c)})}
 function renderFlight(){const t=currentTrip(),o=t.flight?.out||["TPE","—","尚未設定","—"],b=t.flight?.back||["—","TPE","尚未設定","—"];$("flightArea").innerHTML=`<div class="flightRow"><div><div class="airport">${o[0]}</div><div class="mini">${o[2]}</div></div><div>→</div><div><div class="airport">${o[1]}</div><div class="mini">${o[3]}</div></div></div><div class="sep"></div><div class="flightRow"><div><div class="airport">${b[0]}</div><div class="mini">${b[2]}</div></div><div>→</div><div><div class="airport">${b[1]}</div><div class="mini">${b[3]}</div></div></div>`}
-function renderQR(){const t=currentTrip();t.qr=t.qr||[];const box=$("qrGrid");box.innerHTML="";for(let i=0;i<6;i++){const l=document.createElement("label");l.className="qrBox";l.innerHTML=t.qr[i]?`<img src="${t.qr[i]}" style="display:block"><input type="file" accept="image/*">`:`<span>＋ 插入條碼 ${i+1}</span><img><input type="file" accept="image/*">`;l.querySelector("input").onchange=async e=>{const f=e.target.files[0];if(!f)return;t.qr[i]=await compressImage(f,1000,.84);persistTrips();renderQR()};box.appendChild(l)}}
+function renderQR(){
+  const t=currentTrip();
+  t.qr=t.qr||[];
+  t.qrLabels=t.qrLabels||[];
+
+  const box=$("qrGrid");
+  if(!box)return;
+  box.innerHTML="";
+
+  for(let i=0;i<6;i++){
+    const item=document.createElement("div");
+    item.className="qrItem";
+
+    const hasImg=!!t.qr[i];
+    item.innerHTML=`
+      <div class="qrBox">
+        ${hasImg
+          ? `<img src="${escapeAttr(t.qr[i])}" alt="入境條碼 ${i+1}" style="display:block">`
+          : `<span>＋ 插入條碼 ${i+1}</span><img alt="" style="display:none">`
+        }
+        <input class="qrUploadInput" type="file" accept="image/*" aria-label="上傳入境條碼 ${i+1}">
+        ${hasImg?`<button class="qrDeleteBtn" type="button" aria-label="刪除入境條碼 ${i+1}">×</button>`:""}
+      </div>
+      <input class="qrLabelInput" type="text" value="${escapeAttr(t.qrLabels[i]||"")}" placeholder="輸入條碼名稱 / 備註">
+    `;
+
+    const fileInput=item.querySelector(".qrUploadInput");
+    fileInput.onchange=async e=>{
+      const f=e.target.files?.[0];
+      e.target.value="";
+      if(!f)return;
+      t.qr[i]=await compressImage(f,1000,.84);
+      persistTrips();
+      renderQR();
+    };
+
+    const del=item.querySelector(".qrDeleteBtn");
+    if(del){
+      nitaBindReliableDeleteButton(del,async()=>{
+        t.qr[i]="";
+        persistTrips();
+        renderQR();
+        toast("已刪除入境條碼");
+      });
+    }
+
+    const labelInput=item.querySelector(".qrLabelInput");
+    labelInput.oninput=e=>{
+      t.qrLabels[i]=e.target.value;
+      persistTrips();
+    };
+
+    box.appendChild(item);
+  }
+}
 
 
 /* ===== v13 Supabase 每日行程 CRUD ===== */
@@ -1074,13 +1753,57 @@ async function cloudUploadItineraryPhotos(row,di,files,labelEl){
   await renderCloudScheduleList(di);
   if(ok)toast(`已上傳 ${ok} 張照片`);
 }
+
+async function nitaDeleteCloudPhotoEverywhere(a,row,di,assets,box,kind){
+  if(!a||!row)return;
+  if(!cloudCanDeleteAttachment(a,row.trip_id)){
+    toast("你只能刪除自己上傳的照片");
+    return;
+  }
+
+  // 1. 先刪 attachments 紀錄。只有 DB 確認刪成功，才從 UI 移除。
+  const {data,error}=await supabaseClient
+    .from("attachments")
+    .delete()
+    .eq("id",a.id)
+    .select("id");
+
+  if(error||!data?.length){
+    toast("照片刪除失敗："+(error?.message||"沒有刪到照片紀錄"));
+    return;
+  }
+
+  // 2. 同步移除目前編輯工作框使用中的 assets，立即重畫。
+  if(assets?.photos){
+    const idx=assets.photos.findIndex(x=>x.id===a.id);
+    if(idx>=0)assets.photos.splice(idx,1);
+  }
+
+  if(box){
+    if(kind==="backup")cloudRenderBackupPhotos(row,assets,box,di);
+    else cloudRenderPhotos(row,assets,box,di);
+  }
+
+  // 3. 外面的乾淨卡片也同步刷新。
+  if(kind==="backup")await renderCloudBackup(di);
+  else await renderCloudScheduleList(di);
+
+  // 4. 最後清 Storage。即使 Storage 清理失敗，DB/UI 已正確刪除，不再留下壞掉照片紀錄。
+  const storage=await supabaseClient.storage
+    .from("travel-images")
+    .remove([a.file_path]);
+
+  if(storage.error){
+    console.warn("Storage cleanup failed after DB delete",storage.error);
+    toast("照片已刪除；Storage 檔案清理失敗，但畫面與資料紀錄已同步刪除");
+    return;
+  }
+
+  toast(kind==="backup"?"已刪除備用行程照片":"已刪除照片");
+}
+
 async function cloudDeleteItineraryPhoto(a,row,di){
-  if(!cloudCanDeleteAttachment(a,row.trip_id)){toast("你只能刪除自己上傳的照片");return}
-  const storage=await supabaseClient.storage.from("travel-images").remove([a.file_path]);
-  if(storage.error){toast("刪除照片檔案失敗："+storage.error.message);return}
-  const {data,error}=await supabaseClient.from("attachments").delete().eq("id",a.id).select("id");
-  if(error||!data?.length){toast("照片檔已刪除，但紀錄刪除失敗："+(error?.message||"沒有刪到紀錄"));return}
-  await renderCloudScheduleList(di);toast("已刪除照片");
+  await nitaDeleteCloudPhotoEverywhere(a,row,di,null,null,"schedule");
 }
 function cloudRenderLinks(row,assets,box,di,canEdit){
   box.innerHTML="";
@@ -1096,17 +1819,39 @@ function cloudRenderLinks(row,assets,box,di,canEdit){
 }
 function cloudRenderPhotos(row,assets,box,di){
   box.innerHTML="";
+  assets=assets||{links:[],photos:[]};
+  assets.photos=assets.photos||[];
+
   const valid=assets.photos.filter(a=>a.signedUrl);
-  if(!assets.photos.length){box.innerHTML='<div class="cloudAssetEmpty" style="grid-column:1/-1">尚未上傳照片</div>';return}
+  if(!assets.photos.length){
+    box.innerHTML='<div class="cloudAssetEmpty" style="grid-column:1/-1">尚未上傳照片</div>';
+    return;
+  }
+
   const viewer=valid.map(a=>a.signedUrl);
+
   assets.photos.forEach(a=>{
-    const w=document.createElement("div");w.className="galleryItem";
+    const w=document.createElement("div");
+    w.className="galleryItem";
     const src=a.signedUrl||"";
+
     w.innerHTML=`<div class="thumb">${src?`<img src="${escapeAttr(src)}" alt="">`:'<span class="mini">照片讀取失敗</span>'}</div>`;
-    if(src){const idx=viewer.indexOf(src);w.querySelector(".thumb").onclick=()=>openViewer(viewer,Math.max(0,idx))}
-    if(cloudCanDeleteAttachment(a,row.trip_id)){
-      const x=document.createElement("button");x.className="photoX";x.type="button";x.textContent="×";x.setAttribute("aria-label","刪除照片");bindDeleteTap(x,()=>cloudDeleteItineraryPhoto(a,row,di));w.appendChild(x);
+
+    if(src){
+      const idx=viewer.indexOf(src);
+      w.querySelector(".thumb").onclick=()=>openViewer(viewer,Math.max(0,idx));
     }
+
+    if(cloudCanDeleteAttachment(a,row.trip_id)){
+      const x=document.createElement("button");
+      x.className="photoX";
+      x.type="button";
+      x.textContent="×";
+      x.setAttribute("aria-label","刪除照片");
+      bindDeleteTap(x,()=>nitaDeleteCloudPhotoEverywhere(a,row,di,assets,box,"schedule"));
+      w.appendChild(x);
+    }
+
     box.appendChild(w);
   });
 }
@@ -1327,15 +2072,37 @@ async function cloudUploadBackupPhotos(row,di,files,labelEl){
   }catch(err){toast("照片上傳失敗："+(err.message||String(err)))}finally{if(labelEl)labelEl.textContent=original;await renderCloudBackup(di)}
 }
 async function cloudDeleteBackupPhoto(a,row,di){
-  if(!cloudCanDeleteAttachment(a,row.trip_id)){toast("你只能刪除自己上傳的照片");return}
-  const {error:se}=await supabaseClient.storage.from("travel-images").remove([a.file_path]);if(se){toast("Storage 照片刪除失敗："+se.message);return}
-  const {data,error}=await supabaseClient.from("attachments").delete().eq("id",a.id).select("id");if(error||!data?.length){toast("照片紀錄刪除失敗："+(error?.message||"沒有刪到資料"));return}
-  await renderCloudBackup(di);toast("已刪除備用行程照片");
+  await nitaDeleteCloudPhotoEverywhere(a,row,di,null,null,"backup");
 }
 function cloudRenderBackupLinks(row,assets,box,di){box.innerHTML="";(assets?.links||[]).forEach((a)=>{const u=a.url||cloudNormalizeUrl(a.file_path||a.caption||"");const wrap=document.createElement("div");wrap.className="urlPreviewRow";wrap.innerHTML=urlPreviewHtml(u);if(cloudCanDeleteAttachment(a,row.trip_id)){const x=document.createElement("button");x.className="urlPreviewDelete";x.type="button";x.textContent="×";x.onclick=()=>cloudDeleteBackupLink(a,row,di);wrap.appendChild(x)}box.appendChild(wrap);bindDirectPreview(wrap)})
 }
 function cloudRenderBackupPhotos(row,assets,box,di){
-  box.innerHTML="";const photos=(assets?.photos||[]).filter(a=>a.signedUrl),urls=photos.map(a=>a.signedUrl);photos.forEach((a,i)=>{const w=document.createElement("div");w.className="galleryItem";w.innerHTML=`<div class="thumb"><img src="${escapeAttr(a.signedUrl)}" alt=""></div>${cloudCanDeleteAttachment(a,row.trip_id)?'<button class="photoX" type="button" aria-label="刪除照片">×</button>':''}`;w.querySelector("img").onclick=()=>openViewer(urls,i);const x=w.querySelector(".photoX");if(x)bindDeleteTap(x,()=>cloudDeleteBackupPhoto(a,row,di));box.appendChild(w)});
+  box.innerHTML="";
+  assets=assets||{links:[],photos:[]};
+  assets.photos=assets.photos||[];
+
+  const photos=assets.photos.filter(a=>a.signedUrl);
+  const urls=photos.map(a=>a.signedUrl);
+
+  if(!assets.photos.length){
+    box.innerHTML='<div class="cloudAssetEmpty" style="grid-column:1/-1">尚未上傳照片</div>';
+    return;
+  }
+
+  photos.forEach((a,i)=>{
+    const w=document.createElement("div");
+    w.className="galleryItem";
+    w.innerHTML=`<div class="thumb"><img src="${escapeAttr(a.signedUrl)}" alt=""></div>${cloudCanDeleteAttachment(a,row.trip_id)?'<button class="photoX" type="button" aria-label="刪除照片">×</button>':""}`;
+
+    w.querySelector("img").onclick=()=>openViewer(urls,i);
+
+    const x=w.querySelector(".photoX");
+    if(x){
+      bindDeleteTap(x,()=>nitaDeleteCloudPhotoEverywhere(a,row,di,assets,box,"backup"));
+    }
+
+    box.appendChild(w);
+  });
 }
 async function renderCloudBackup(di){
   const t=currentTrip(),box=$("backupList"),addBtn=$("addBackupBtn");if(!box||!t?.supabase)return;
@@ -1546,7 +2313,7 @@ function loadGoogleMapsApi(){
   if(window.google?.maps){googleMapsReady=true;return Promise.resolve(window.google.maps)}
   if(googleMapsLoadPromise)return googleMapsLoadPromise;
   if(!hasGoogleApiKey()){
-    setMapStatus("Google Maps API Key 尚未設定。請在上方「Google Maps API 設定」貼上 Key 並儲存。",true);
+    setMapStatus("",true);
     return Promise.reject(new Error("Google Maps API Key 尚未設定"));
   }
   googleMapsLoadPromise=new Promise((resolve,reject)=>{
@@ -1690,7 +2457,7 @@ function initGoogleMap(fit=false){
   if(!el)return;
   if(!window.google?.maps){
     if(hasGoogleApiKey())setMapStatus("正在載入 Google Maps…",true);
-    else setMapStatus("Google Maps API Key 尚未設定。請在「Google Maps API 設定」貼上 Key 並儲存。",true);
+    else setMapStatus("",true);
     loadGoogleMapsApi().catch(()=>{});
     return;
   }
@@ -1857,7 +2624,7 @@ async function runMapSearch(){
   }catch(err){
     console.error(err);
     const msg=String(err?.message||err);
-    if(msg.includes("API Key"))setMapStatus("Google API Key 尚未設定。請在「Google Maps API 設定」貼上 Key 並儲存。");
+    if(msg.includes("API Key"))setMapStatus("");
     else setMapStatus("Google Places 搜尋失敗。請檢查 API Key 限制、Places API (New) 是否啟用，以及目前網路連線。");
   }finally{$("mapSearchBtn").disabled=false}
 }
@@ -1997,16 +2764,150 @@ async function fullCloudHydrateCurrentTrip(){const t=currentTrip();if(!t?.supaba
 
 function todayIso(){const d=new Date();return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
 let expensePendingDate=todayIso();
+let expenseSelectedPayer=load("travelExpenseSelectedPayerV1","");
 function renderExpenses(){
-  const page=$("expensePage");state.payers=state.payers&&state.payers.length?state.payers:["Rok","Nita"];
-  page.innerHTML=`<div class="section">記帳</div><div id="payerStatsWrap"></div><div class="card expenseEntryCard"><div class="field"><span class="label">日期</span><button class="expenseDateBtn" id="expenseDateBtn" type="button">${fmtZh(expensePendingDate)}</button></div><div class="two"><div class="field"><span class="label">金額</span><input class="input" id="expenseAmount" inputmode="decimal" placeholder="0"></div><div class="field"><span class="label">幣別</span><select class="input softSelect" id="expenseCurrency"><option>TWD</option><option value="CARD">刷卡</option><option>THB</option><option>KRW</option><option>JPY</option><option>USD</option></select></div></div><div class="two"><div class="field"><span class="label">類別</span><select class="input softSelect" id="expenseCategory"><option>餐飲</option><option>交通</option><option>住宿</option><option>購物</option><option>票券</option><option>其他</option></select></div><div class="field"><span class="label">付款人</span><select class="input softSelect" id="expensePayer"></select></div></div><button class="smallBtn" id="addPayerBtn" type="button">＋ 新增付款人</button><button class="primary" id="addExpenseBtn">＋ 新增記帳</button></div><div class="card expenseListCard" id="expenseList"></div>`;
-  const payerSel=$("expensePayer");payerSel.innerHTML=state.payers.map(x=>`<option>${escapeHtml(x)}</option>`).join("");
-  $("addPayerBtn").onclick=()=>openSimpleTextForm("新增付款人","付款人名稱","例如：Rok",v=>{if(!state.payers.includes(v))state.payers.push(v);save("travelPayersV20",state.payers);renderExpenses()});
-  $("expenseDateBtn").onclick=()=>openGenericCalendar(expensePendingDate,v=>{expensePendingDate=v;renderExpenses()});
-  $("addExpenseBtn").onclick=()=>{const amount=$("expenseAmount").value.trim();if(!amount){toast("請輸入金額");return}state.expenses.push({date:expensePendingDate,amount,currency:$("expenseCurrency").value,category:$("expenseCategory").value,payer:$("expensePayer").value||"未填"});save("travelExpensesV13",state.expenses);renderExpenses();toast("已新增記帳")};
-  const stats=$("payerStatsWrap");const known=Array.from(new Set([...state.payers,...state.expenses.map(e=>e.payer||"未填")]));
-  known.forEach(payer=>{let twd=0,twdCount=0,card=0,cardCount=0,fxCount=0;const fxBy={};state.expenses.filter(e=>(e.payer||"未填")===payer).forEach(e=>{const n=Number(e.amount)||0;if(e.currency==="TWD"){twd+=n;twdCount++}else if(e.currency==="CARD"){card+=n;cardCount++}else{fxCount++;fxBy[e.currency]=(fxBy[e.currency]||0)+n}});const fxText=Object.entries(fxBy).map(([c,v])=>`${c} ${Number(v).toLocaleString()}`).join(" · ")||"0";const block=document.createElement("div");block.className="payerBlock";block.innerHTML=`<div class="payerHead"><div class="payerName">付款人｜${escapeHtml(payer)}</div><button class="collapseBare" type="button">⌃</button></div><div class="payerStats"><div class="expenseStat"><div class="l">外幣總額</div><div class="v">${fxText}</div></div><div class="expenseStat"><div class="l">外幣筆數</div><div class="v">${fxCount}</div></div><div class="expenseStat"><div class="l">刷卡總額</div><div class="v">NT$ ${card.toLocaleString()}</div></div><div class="expenseStat"><div class="l">刷卡筆數</div><div class="v">${cardCount}</div></div><div class="expenseStat"><div class="l">台幣總額</div><div class="v">NT$ ${twd.toLocaleString()}</div></div><div class="expenseStat"><div class="l">台幣筆數</div><div class="v">${twdCount}</div></div></div>`;block.querySelector(".collapseBare").onclick=e=>{block.classList.toggle("collapsed");e.currentTarget.textContent=block.classList.contains("collapsed")?"⌄":"⌃"};stats.appendChild(block)});
-  const box=$("expenseList");const sorted=state.expenses.map((e,i)=>({e,i})).sort((a,b)=>String(a.e.date||"").localeCompare(String(b.e.date||""))||a.i-b.i);sorted.forEach(({e,i})=>{const r=document.createElement("div");r.className="listRow";const displayCurrency=e.currency==="CARD"?"刷卡":e.currency;r.innerHTML=`<div class="iconBox">💰</div><div class="grow"><div>${escapeHtml(e.category)}</div><div class="mini">${escapeHtml(e.payer)} 付款</div><div class="expenseDate">${escapeHtml(e.date||"未設定日期")}</div></div><div class="amount">${displayCurrency} ${escapeHtml(e.amount)}</div><button class="trashBtn" type="button">🗑</button>`;r.querySelector(".trashBtn").onclick=()=>{state.expenses.splice(i,1);save("travelExpensesV13",state.expenses);renderExpenses();toast("已刪除記帳")};box.appendChild(r)});
+  const page=$("expensePage");
+  state.payers=state.payers&&state.payers.length?state.payers:["Rok","Nita"];
+
+  const known=Array.from(new Set([...state.payers,...state.expenses.map(e=>e.payer||"未填")]));
+  if(!expenseSelectedPayer||!known.includes(expenseSelectedPayer)){
+    expenseSelectedPayer=known[0]||"Rok";
+  }
+
+  page.innerHTML=`
+    <div class="section">記帳</div>
+    <div class="payerTabs" id="payerTabs"></div>
+    <div class="payerStatsSingle" id="payerStatsWrap"></div>
+
+    <div class="card expenseEntryCard">
+      <div class="field"><span class="label">日期</span><button class="expenseDateBtn" id="expenseDateBtn" type="button">${fmtZh(expensePendingDate)}</button></div>
+      <div class="two">
+        <div class="field"><span class="label">金額</span><input class="input" id="expenseAmount" inputmode="decimal" placeholder="0"></div>
+        <div class="field"><span class="label">幣別</span><select class="input softSelect" id="expenseCurrency"><option>TWD</option><option value="CARD">刷卡</option><option>THB</option><option>KRW</option><option>JPY</option><option>USD</option></select></div>
+      </div>
+      <div class="two">
+        <div class="field"><span class="label">類別</span><select class="input softSelect" id="expenseCategory"><option>餐飲</option><option>交通</option><option>住宿</option><option>購物</option><option>票券</option><option>其他</option></select></div>
+        <div class="field"><span class="label">付款人</span><select class="input softSelect" id="expensePayer"></select></div>
+      </div>
+      <button class="smallBtn" id="addPayerBtn" type="button">＋ 新增付款人</button>
+      <button class="primary" id="addExpenseBtn">＋ 新增記帳</button>
+    </div>
+
+    <div class="card expenseListCard" id="expenseList"></div>
+  `;
+
+  const payerSel=$("expensePayer");
+  payerSel.innerHTML=state.payers.map(x=>`<option>${escapeHtml(x)}</option>`).join("");
+  if(state.payers.includes(expenseSelectedPayer))payerSel.value=expenseSelectedPayer;
+
+  const tabs=$("payerTabs");
+  known.forEach(payer=>{
+    const b=document.createElement("button");
+    b.className="payerTab"+(payer===expenseSelectedPayer?" active":"");
+    b.type="button";
+    b.textContent=payer;
+    b.onclick=()=>{
+      expenseSelectedPayer=payer;
+      save("travelExpenseSelectedPayerV1",expenseSelectedPayer);
+      renderExpenses();
+    };
+    tabs.appendChild(b);
+  });
+
+  $("addPayerBtn").onclick=()=>openSimpleTextForm("新增付款人","付款人名稱","例如：Rok",v=>{
+    if(!state.payers.includes(v))state.payers.push(v);
+    expenseSelectedPayer=v;
+    save("travelPayersV20",state.payers);
+    save("travelExpenseSelectedPayerV1",expenseSelectedPayer);
+    renderExpenses();
+  });
+
+  $("expenseDateBtn").onclick=()=>openGenericCalendar(expensePendingDate,v=>{
+    expensePendingDate=v;
+    renderExpenses();
+  });
+
+  $("addExpenseBtn").onclick=()=>{
+    const amount=$("expenseAmount").value.trim();
+    if(!amount){toast("請輸入金額");return}
+    const payer=$("expensePayer").value||"未填";
+    state.expenses.push({
+      date:expensePendingDate,
+      amount,
+      currency:$("expenseCurrency").value,
+      category:$("expenseCategory").value,
+      payer
+    });
+    expenseSelectedPayer=payer;
+    save("travelExpenseSelectedPayerV1",expenseSelectedPayer);
+    save("travelExpensesV13",state.expenses);
+    renderExpenses();
+    toast("已新增記帳");
+  };
+
+  const payer=expenseSelectedPayer;
+  let twd=0,twdCount=0,card=0,cardCount=0,fxCount=0;
+  const fxBy={};
+
+  state.expenses.filter(e=>(e.payer||"未填")===payer).forEach(e=>{
+    const n=Number(e.amount)||0;
+    if(e.currency==="TWD"){twd+=n;twdCount++}
+    else if(e.currency==="CARD"){card+=n;cardCount++}
+    else{
+      fxCount++;
+      fxBy[e.currency]=(fxBy[e.currency]||0)+n;
+    }
+  });
+
+  const fxText=Object.entries(fxBy)
+    .map(([c,v])=>`${c} ${Number(v).toLocaleString()}`)
+    .join(" · ")||"0";
+
+  $("payerStatsWrap").innerHTML=`
+    <div class="payerBlock">
+      <div class="payerStats">
+        <div class="expenseStat"><div class="l">外幣總額</div><div class="v">${fxText}</div></div>
+        <div class="expenseStat"><div class="l">外幣筆數</div><div class="v">${fxCount}</div></div>
+        <div class="expenseStat"><div class="l">刷卡總額</div><div class="v">NT$ ${card.toLocaleString()}</div></div>
+        <div class="expenseStat"><div class="l">刷卡筆數</div><div class="v">${cardCount}</div></div>
+        <div class="expenseStat"><div class="l">台幣總額</div><div class="v">NT$ ${twd.toLocaleString()}</div></div>
+        <div class="expenseStat"><div class="l">台幣筆數</div><div class="v">${twdCount}</div></div>
+      </div>
+    </div>
+  `;
+
+  const box=$("expenseList");
+  const sorted=state.expenses
+    .map((e,i)=>({e,i}))
+    .filter(({e})=>(e.payer||"未填")===expenseSelectedPayer)
+    .sort((a,b)=>String(a.e.date||"").localeCompare(String(b.e.date||""))||a.i-b.i);
+
+  if(!sorted.length){
+    box.innerHTML=`<div class="mini">${escapeHtml(expenseSelectedPayer)} 目前沒有記帳資料。</div>`;
+  }
+
+  sorted.forEach(({e,i})=>{
+    const r=document.createElement("div");
+    r.className="listRow";
+    const displayCurrency=e.currency==="CARD"?"刷卡":e.currency;
+    r.innerHTML=`
+      <div class="iconBox">💰</div>
+      <div class="grow">
+        <div>${escapeHtml(e.category)}</div>
+        <div class="mini">${escapeHtml(e.payer)} 付款</div>
+        <div class="expenseDate">${escapeHtml(e.date||"未設定日期")}</div>
+      </div>
+      <div class="amount">${displayCurrency} ${escapeHtml(e.amount)}</div>
+      <button class="trashBtn" type="button">🗑</button>
+    `;
+    r.querySelector(".trashBtn").onclick=()=>{
+      state.expenses.splice(i,1);
+      save("travelExpensesV13",state.expenses);
+      renderExpenses();
+      toast("已刪除記帳");
+    };
+    box.appendChild(r);
+  });
 }
 
 let pendingJournalImages=[];
@@ -2026,6 +2927,7 @@ let selectedAdminMember=null;
 let selectedAvatarMember=null;
 let memberAvatarColumnSupported=null;
 let memberEmailColumnSupported=null;
+let accountSensitiveEpoch=0;
 
 async function profileColumnExistsForMembers(col){
   const {error}=await supabaseClient.from("profiles").select(col).limit(1);
@@ -2036,47 +2938,113 @@ async function ensureMemberProfileColumns(){
   if(memberEmailColumnSupported===null)memberEmailColumnSupported=await profileColumnExistsForMembers("email");
 }
 async function signedMemberAvatar(path){
-  if(!path)return "";
-  const {data,error}=await supabaseClient.storage.from("travel-images").createSignedUrl(path,3600);
-  return error?"":(data?.signedUrl||"");
+  const raw=String(path||"").trim();
+  if(!raw)return "";
+  if(raw.startsWith("data:image/")||raw.startsWith("blob:")||/^https?:\/\//i.test(raw))return raw;
+
+  // 相容舊版已經存在於 travel-images 的路徑
+  try{
+    const {data,error}=await supabaseClient.storage.from("travel-images").createSignedUrl(raw,3600);
+    return error?"":(data?.signedUrl||"");
+  }catch(_){
+    return "";
+  }
 }
 async function loadAdminMembers(){
   const panel=$("adminMembers"),list=$("memberList");
   if(!panel||!list)return;
-  if(!supabaseSessionUser||!isSupabaseAdmin()||!supabaseFamilyId){panel.hidden=true;list.innerHTML="";return}
-  panel.hidden=false;list.innerHTML='<div class="mini">讀取中…</div>';
+
+  const epoch=accountSensitiveEpoch;
+  const sessionUserId=supabaseSessionUser?.id||"";
+  const familyId=supabaseFamilyId;
+
+  const stillAllowed=()=>(
+    epoch===accountSensitiveEpoch &&
+    !!supabaseSessionUser &&
+    supabaseSessionUser.id===sessionUserId &&
+    isSupabaseAdmin() &&
+    !!supabaseFamilyId &&
+    supabaseFamilyId===familyId
+  );
+
+  if(!stillAllowed()){
+    panel.hidden=true;
+    panel.style.display="none";
+    list.replaceChildren();
+    return;
+  }
+
+  panel.hidden=false;
+  panel.style.display="";
+  list.innerHTML='<div class="mini">讀取中…</div>';
+
   try{
     await ensureMemberProfileColumns();
-    const {data:fm,error:fe}=await supabaseClient.from("family_members").select("user_id").eq("family_id",supabaseFamilyId);
+    if(!stillAllowed())return;
+
+    const {data:fm,error:fe}=await supabaseClient
+      .from("family_members").select("user_id").eq("family_id",familyId);
     if(fe)throw fe;
+    if(!stillAllowed())return;
+
     const ids=[...new Set((fm||[]).map(x=>x.user_id).filter(Boolean))];
-    if(!ids.length){adminMemberRows=[];adminMemberPerms=[];list.innerHTML='<div class="mini">目前沒有會員資料。</div>';return}
+    if(!ids.length){
+      if(stillAllowed()){
+        adminMemberRows=[];adminMemberPerms=[];
+        list.innerHTML='<div class="mini">目前沒有會員資料。</div>';
+      }
+      return;
+    }
+
     let cols="id,display_name,role,account_status";
     if(memberAvatarColumnSupported)cols+=",avatar_path";
     if(memberEmailColumnSupported)cols+=",email";
+
     const {data:profiles,error:pe}=await supabaseClient.from("profiles").select(cols).in("id",ids);
     if(pe)throw pe;
+    if(!stillAllowed())return;
+
     const tripIds=(supabaseCloudTrips||[]).map(t=>t.id);
     let perms=[];
     if(tripIds.length){
-      const r=await supabaseClient.from("trip_members").select("user_id,trip_id,permission").in("trip_id",tripIds).in("user_id",ids);
+      const r=await supabaseClient.from("trip_members")
+        .select("user_id,trip_id,permission").in("trip_id",tripIds).in("user_id",ids);
       if(!r.error)perms=r.data||[];
     }
+    if(!stillAllowed())return;
+
     adminMemberRows=profiles||[];
     adminMemberPerms=perms||[];
-    list.innerHTML="";
+    list.replaceChildren();
+
     for(const p of adminMemberRows){
+      if(!stillAllowed())return;
+
       const name=p.display_name||"未命名會員";
       const email=(p.id===supabaseSessionUser.id?(supabaseSessionUser.email||""):(p.email||""));
       const avatar=memberAvatarColumnSupported?await signedMemberAvatar(p.avatar_path):"";
-      const row=document.createElement("div");row.className="memberRow";
+      if(!stillAllowed())return;
+
+      const row=document.createElement("div");
+      row.className="memberRow";
       row.innerHTML=`<label class="memberAvatar${avatar?" hasPhoto":""}" data-member-avatar="${escapeAttr(p.id)}" aria-label="更換 ${escapeAttr(name)} 的照片"><input type="file" accept="image/*,.heic,.heif" data-member-avatar-input="${escapeAttr(p.id)}">${avatar?`<img src="${escapeAttr(avatar)}" alt="">`:""}<span class="memberAvatarFallback">${escapeHtml(name)}</span></label><div class="memberInfo"><div class="memberName">${escapeHtml(name)}</div><div class="memberEmail">${escapeHtml(email||"Email 由 Auth 管理")}</div><div class="memberBadges"><span class="rolePill">${String(p.role||"member").toUpperCase()}</span><span class="memberStatusPill${String(p.account_status||"active")==="active"?"":" off"}">${String(p.account_status||"active")==="active"?"使用中":"已停用"}</span></div></div><button class="memberChevron" type="button" data-member-open="${escapeAttr(p.id)}" aria-label="開啟成員設定">›</button>`;
+
       const avatarInput=row.querySelector("[data-member-avatar-input]");
-      avatarInput.onchange=e=>{const f=e.currentTarget.files?.[0];e.currentTarget.value="";if(f)void uploadMemberAvatarFor(p.id,f,row.querySelector(".memberAvatar"))};
+      const avatarLabel=row.querySelector(".memberAvatar");
+      avatarInput.disabled=false;
+      avatarInput.onchange=e=>{
+        const f=e.currentTarget.files?.[0];
+        e.currentTarget.value="";
+        if(f)void uploadMemberAvatarFor(p.id,f,avatarLabel);
+      };
       row.querySelector("[data-member-open]").onclick=()=>openMemberSettings(p.id);
       list.appendChild(row);
     }
-  }catch(e){list.innerHTML='<div class="mini">會員資料讀取失敗：'+escapeHtml(e?.message||String(e))+'</div>'}
+  }catch(e){
+    if(stillAllowed()){
+      list.innerHTML='<div class="mini">會員資料讀取失敗：'+escapeHtml(e?.message||String(e))+'</div>';
+    }
+  }
 }
 
 async function prepareAvatarBlob(file){
@@ -2094,34 +3062,41 @@ async function prepareAvatarBlob(file){
 }
 async function uploadMemberAvatarFor(userId,file,labelEl){
   if(!isSupabaseAdmin()){toast("只有 ADMIN 可以修改成員照片");return}
-  if(!memberAvatarColumnSupported){toast("請先執行最新整合 SQL，建立 avatar_path 欄位");return}
-  if(!file){return}
+  if(!memberAvatarColumnSupported){toast("profiles 尚未建立 avatar_path 欄位");return}
+  if(!file)return;
+
   if(!(file.type||"").startsWith("image/")&&!/\.(heic|heif|jpg|jpeg|png|webp)$/i.test(file.name||"")){
-    toast("請選擇照片");return
+    toast("請選擇照片");
+    return;
   }
+
   try{
     if(labelEl)labelEl.classList.add("uploading");
-    toast("正在上傳照片…");
-    const prepared=await prepareAvatarBlob(file);
-    const path=`family-avatars/${supabaseFamilyId}/${userId}/avatar-${Date.now()}.${prepared.ext}`;
-    const {error:uploadError}=await supabaseClient.storage.from("travel-images").upload(
-      path,
-      prepared.blob,
-      {contentType:prepared.contentType,cacheControl:"3600",upsert:false}
-    );
-    if(uploadError)throw new Error("Storage："+uploadError.message);
+    toast("正在處理照片…");
 
-    const {data:oldPath,error:pathError}=await supabaseClient.rpc("admin_set_member_avatar_path",{
-      p_user_id:userId,
-      p_avatar_path:path
-    });
-    if(pathError){
-      await supabaseClient.storage.from("travel-images").remove([path]);
-      throw new Error("profiles："+pathError.message);
+    // 小家庭 App 直接把壓縮後頭像存進 profiles.avatar_path。
+    // 不走 Storage，因此完全避開既有 travel-images UUID path policy 衝突。
+    const dataUrl=await compressImage(file,420,.78);
+    if(!dataUrl||!dataUrl.startsWith("data:image/")){
+      throw new Error("照片轉換失敗，請改用 JPG / PNG 再試");
     }
 
-    if(oldPath&&oldPath!==path){
-      await supabaseClient.storage.from("travel-images").remove([oldPath]);
+    let saved=false;
+
+    // 優先走既有 ADMIN RPC
+    try{
+      const {error}=await supabaseClient.rpc("admin_set_member_avatar_path",{
+        p_user_id:userId,
+        p_avatar_path:dataUrl
+      });
+      if(!error)saved=true;
+    }catch(_){}
+
+    // RPC 不存在時，使用既有 ADMIN profiles UPDATE policy fallback
+    if(!saved){
+      const {error}=await supabaseClient.from("profiles")
+        .update({avatar_path:dataUrl}).eq("id",userId);
+      if(error)throw error;
     }
 
     toast("成員照片已更新");
@@ -2245,22 +3220,55 @@ async function createFamilyMember(){
 
 
 function openRegisterMember(){
-  if(supabaseSessionUser){toast("請先登出目前帳號");return}
+  // 「第一次使用」就是未登入使用者的公開入口，不需要登入。
+  if(supabaseSessionUser){
+    toast("目前已登入；如要建立另一個新帳號，請先登出");
+    return;
+  }
+
+  const overlay=$("registerMemberOverlay");
+  if(!overlay)return;
+
   $("registerNameInput").value="";
   $("registerEmailInput").value=$("supabaseEmailInput")?.value||"";
   $("registerPasswordInput").value="";
-  $("registerMemberOverlay").classList.add("show");
+
+  overlay.classList.add("show");
+  overlay.querySelectorAll("input,button").forEach(el=>{
+    el.disabled=false;
+    el.classList.remove("authWriteLocked");
+    el.removeAttribute("aria-disabled");
+    el.style.pointerEvents="";
+  });
+
+  setTimeout(()=>$("registerNameInput")?.focus(),50);
 }
 function closeRegisterMember(){
   $("registerMemberOverlay").classList.remove("show");
 }
 async function registerMember(){
-  if(!supabaseClient&&!buildSupabaseClient()){toast("雲端服務尚未完成設定");return}
+  if(supabaseSessionUser){
+    toast("目前已登入；請先登出再註冊另一個帳號");
+    return;
+  }
+  if(!supabaseClient&&!buildSupabaseClient()){
+    toast("雲端服務尚未完成設定");
+    return;
+  }
+
   const display_name=$("registerNameInput").value.trim();
   const email=$("registerEmailInput").value.trim().toLowerCase();
   const password=$("registerPasswordInput").value;
-  if(!display_name||!email||!password){toast("姓名、Email、密碼都要填寫");return}
-  if(password.length<6){toast("密碼至少 6 個字元");return}
+
+  if(!display_name||!email||!password){
+    toast("姓名、Email、密碼都要填寫");
+    return;
+  }
+  if(password.length<6){
+    toast("密碼至少 6 個字元");
+    return;
+  }
+
   try{
     toast("正在註冊會員…");
     const {data,error}=await supabaseClient.auth.signUp({
@@ -2269,14 +3277,28 @@ async function registerMember(){
       options:{data:{display_name}}
     });
     if(error)throw error;
+
     closeRegisterMember();
+
+    // 即使 Supabase 設定成註冊後立即有 session，也立刻登出。
+    // 新會員必須先由 ADMIN 加入 family，才可以正式登入使用家庭資料。
     if(data?.session){
-      await supabaseClient.auth.signOut();
-      supabaseSessionUser=null;supabaseProfile=null;supabaseCloudTrips=[];supabaseTripPermissions={};supabaseFamilyId=null;
-      refreshAccountUI();
+      try{await supabaseClient.auth.signOut()}catch(_){}
+    }
+
+    supabaseSessionUser=null;
+    supabaseProfile=null;
+    supabaseCloudTrips=[];
+    supabaseTripPermissions={};
+    supabaseTripDays={};
+    supabaseFamilyId=null;
+    clearSensitiveAccountUI();
+    refreshAccountUI();
+
+    if(data?.session){
       toast("註冊成功，請通知 ADMIN 用此 Email 加入家庭");
     }else{
-      toast("註冊成功，請先完成 Email 驗證，再通知 ADMIN 加入家庭");
+      toast("註冊成功；如有 Email 驗證信請先完成驗證，再通知 ADMIN 加入家庭");
     }
   }catch(e){
     toast("註冊失敗："+(e.message||String(e)));
@@ -2290,69 +3312,214 @@ function authWriteToast(){toast("請先登入後再新增或修改資料")}
 function applyLoggedOutWriteLock(){
   const logged=!!supabaseSessionUser;
   document.body.classList.toggle("loggedOutMode",!logged);
-  const allowInputIds=new Set(["supabaseEmailInput","supabasePasswordInput","registerNameInput","registerEmailInput","registerPasswordInput"]);
-  document.querySelectorAll('input,textarea,select').forEach(el=>{
-    if(allowInputIds.has(el.id)){
-      el.disabled=logged;
+
+  // ===== 公開帳號流程：未登入時一定可操作 =====
+  const publicWhenLoggedOut=[
+    "supabaseEmailInput","supabasePasswordInput","supabaseLoginBtn","registerMemberBtn",
+    "registerNameInput","registerEmailInput","registerPasswordInput",
+    "submitRegisterMemberBtn","closeRegisterMemberBtn"
+  ];
+  publicWhenLoggedOut.forEach(id=>{
+    const el=$(id);
+    if(!el)return;
+    el.disabled=logged;
+    el.classList.remove("authWriteLocked");
+    el.removeAttribute("aria-disabled");
+    el.style.pointerEvents="";
+  });
+
+  const logoutBtn=$("supabaseLogoutBtn");
+  if(logoutBtn)logoutBtn.disabled=!logged;
+
+  const reg=$("registerMemberOverlay");
+  if(reg&&!logged){
+    reg.querySelectorAll("input,button").forEach(el=>{
+      el.disabled=false;
       el.classList.remove("authWriteLocked");
-      return;
-    }
-    // hidden technical fields do not matter; all business-edit controls are locked while logged out
-    if(!logged){el.disabled=true;el.classList.add("authWriteLocked")}
-    else{el.disabled=false;el.classList.remove("authWriteLocked")}
+      el.removeAttribute("aria-disabled");
+      el.style.pointerEvents="";
+    });
+  }
+
+  // ===== 成員管理：只有已登入 ADMIN 才能顯示 =====
+  const showAdmin=logged&&isSupabaseAdmin();
+  const adminPanel=$("adminMembers");
+  if(adminPanel){
+    adminPanel.hidden=!showAdmin;
+    adminPanel.style.display=showAdmin?"":"none";
+  }
+  if(!showAdmin&&$("memberList"))$("memberList").innerHTML="";
+
+  // ===== 未登入時只鎖旅行/預訂/地圖/記帳/收藏/準備的寫入欄位 =====
+  const businessRoots=[
+    "#schedulePage","#bookingsPage","#mapPage","#expensePage",
+    "#journalPage","#planningPage","#calendarOverlay","#formOverlay"
+  ];
+  document.querySelectorAll(businessRoots.join(",")).forEach(root=>{
+    root.querySelectorAll("input,textarea,select").forEach(el=>{
+      el.disabled=!logged;
+      el.classList.toggle("authWriteLocked",!logged);
+    });
   });
-  document.querySelectorAll('[contenteditable="true"],#brandTitle').forEach(el=>{
-    if(!logged){el.dataset.authPrevContenteditable=el.getAttribute("contenteditable")||"true";el.setAttribute("contenteditable","false");el.classList.add("authWriteLocked")}
-    else if(el.dataset.authPrevContenteditable){el.setAttribute("contenteditable",el.dataset.authPrevContenteditable);delete el.dataset.authPrevContenteditable;el.classList.remove("authWriteLocked")}
-  });
-  const writeSelector=[
-    '#addTripBtn','#startDateBtn','#endDateBtn','#mapSearchBtn','#addMarkerTypeBtn','#deleteMarkerTypeBtn',
-    '#addScheduleBtn','#addBackupBtn','#addExpenseBtn','#addPayerBtn','#journalUploadBtn','#addJournalBtn',
-    '#addPlanningBtn','#deleteSelectedBtn','#formConfirm','#bannerWrap',
-    '.bookingAdd','.deleteBtn','.trashBtn','.photoX','.cloudLinkDelete','.markerEdit','.mapTrash','.dangerWide'
-  ].join(',');
-  document.querySelectorAll(writeSelector).forEach(el=>{
-    if('disabled' in el) el.disabled=!logged;
-    el.classList.toggle('authWriteLocked',!logged);
-    if(!logged) el.setAttribute('aria-disabled','true'); else el.removeAttribute('aria-disabled');
-  });
-}
-function installLoggedOutWriteGuard(){
-  if(window.__nitaAuthWriteGuardInstalled)return;
-  window.__nitaAuthWriteGuardInstalled=true;
+
   const writeSelector=[
     '#addTripBtn','#startDateBtn','#endDateBtn','#mapSearchBtn','#addMarkerTypeBtn','#deleteMarkerTypeBtn',
     '#addScheduleBtn','#addBackupBtn','#addExpenseBtn','#addPayerBtn','#journalUploadBtn','#addJournalBtn',
     '#addPlanningBtn','#deleteSelectedBtn','#formConfirm','#bannerWrap',
     '.bookingAdd','.deleteBtn','.trashBtn','.photoX','.cloudLinkDelete','.markerEdit','.mapTrash','.dangerWide',
     'label.smallBtn:has(input[type="file"])'
-  ].join(',');
-  document.addEventListener('click',e=>{
-    if(supabaseSessionUser)return;
-    const hit=e.target.closest?.(writeSelector);
-    if(!hit)return;
-    e.preventDefault();e.stopImmediatePropagation();authWriteToast();
-  },true);
-  document.addEventListener('beforeinput',e=>{
-    if(supabaseSessionUser)return;
-    const el=e.target;
-    if(!el||el.id==='supabaseEmailInput'||el.id==='supabasePasswordInput')return;
-    if(el.matches?.('input,textarea,[contenteditable]')){e.preventDefault();e.stopImmediatePropagation();authWriteToast()}
-  },true);
-  document.addEventListener('change',e=>{
-    if(supabaseSessionUser)return;
-    const el=e.target;
-    if(!el||el.id==='supabaseEmailInput'||el.id==='supabasePasswordInput')return;
-    if(el.matches?.('input,textarea,select')){e.preventDefault();e.stopImmediatePropagation();authWriteToast();applyLoggedOutWriteLock()}
-  },true);
-  new MutationObserver(()=>applyLoggedOutWriteLock()).observe(document.body,{childList:true,subtree:true});
+  ].join(",");
+
+  document.querySelectorAll(writeSelector).forEach(el=>{
+    // Account / register modal 永遠不套這層鎖
+    if(el.closest?.("#accountPage,#registerMemberOverlay"))return;
+    if("disabled" in el)el.disabled=!logged;
+    el.classList.toggle("authWriteLocked",!logged);
+    if(!logged){
+      el.setAttribute("aria-disabled","true");
+      el.style.pointerEvents="none";
+    }else{
+      el.removeAttribute("aria-disabled");
+      el.style.pointerEvents="";
+    }
+  });
+}
+function installLoggedOutWriteGuard(){
+  if(window.__nitaAuthWriteGuardInstalled)return;
+  window.__nitaAuthWriteGuardInstalled=true;
+
+  // 不再使用 document capture 去攔所有 click。
+  // 登出狀態只透過 disabled / authWriteLocked 鎖「旅行資料寫入」按鈕，
+  // 登入與註冊永遠保持獨立公開流程，避免再次誤攔登入/註冊。
+  new MutationObserver(()=>applyLoggedOutWriteLock())
+    .observe(document.body,{childList:true,subtree:true});
+}
+
+
+const HOME_ICON_STORAGE_KEY="nitaHomeScreenIconV1";
+
+function nitaApplyHomeIcon(dataUrl){
+  const current=document.querySelectorAll('link[rel="apple-touch-icon"],link[rel="icon"][data-nita-dynamic-icon]');
+  current.forEach(el=>el.remove());
+
+  const apple=document.createElement("link");
+  apple.rel="apple-touch-icon";
+  apple.sizes="180x180";
+  apple.href=dataUrl||"./apple-touch-icon.png";
+  apple.dataset.nitaDynamicIcon="1";
+  document.head.appendChild(apple);
+
+  const fav=document.createElement("link");
+  fav.rel="icon";
+  fav.type="image/png";
+  fav.href=dataUrl||"./icon-192.png";
+  fav.dataset.nitaDynamicIcon="1";
+  document.head.appendChild(fav);
+}
+
+function nitaRenderHomeIconSetting(){
+  const panel=$("homeIconPanel");
+  if(!panel)return;
+
+  const show=!!supabaseSessionUser&&isSupabaseAdmin();
+  panel.hidden=!show;
+  if(!show)return;
+
+  const saved=localStorage.getItem(HOME_ICON_STORAGE_KEY)||"";
+  const preview=$("homeIconPreview");
+  preview.innerHTML=saved?`<img src="${saved}" alt="目前主畫面圖示">`:"尚未設定";
+
+  const input=$("homeIconInput");
+  if(input&&!input.dataset.bound){
+    input.dataset.bound="1";
+    input.onchange=async e=>{
+      const file=e.target.files?.[0];
+      e.target.value="";
+      if(!file)return;
+
+      try{
+        const dataUrl=await compressImage(file,512,.9);
+        if(!dataUrl||!dataUrl.startsWith("data:image/")){
+          toast("圖示圖片處理失敗");
+          return;
+        }
+        localStorage.setItem(HOME_ICON_STORAGE_KEY,dataUrl);
+        nitaApplyHomeIcon(dataUrl);
+        nitaRenderHomeIconSetting();
+        toast("主畫面圖示已設定。請移除舊捷徑後重新加入主畫面。");
+      }catch(err){
+        toast("主畫面圖示設定失敗："+(err.message||String(err)));
+      }
+    };
+  }
+
+  const reset=$("homeIconResetBtn");
+  if(reset&&!reset.dataset.bound){
+    reset.dataset.bound="1";
+    reset.onclick=()=>{
+      localStorage.removeItem(HOME_ICON_STORAGE_KEY);
+      nitaApplyHomeIcon("");
+      nitaRenderHomeIconSetting();
+      toast("已恢復預設圖示");
+    };
+  }
+}
+
+function nitaRestoreHomeIcon(){
+  const saved=localStorage.getItem(HOME_ICON_STORAGE_KEY)||"";
+  if(saved)nitaApplyHomeIcon(saved);
+}
+
+function clearSensitiveAccountUI(){
+  accountSensitiveEpoch++;
+  supabaseFamilyId=null;
+  adminMemberRows=[];
+  adminMemberPerms=[];
+  selectedAdminMember=null;
+  selectedAvatarMember=null;
+
+  const panel=$("adminMembers");
+  const list=$("memberList");
+  if(panel){
+    panel.hidden=true;
+    panel.style.display="none";
+  }
+  if(list)list.replaceChildren();
+
+  ["memberSettingsOverlay","addFamilyMemberOverlay"].forEach(id=>{
+    const el=$(id);
+    if(el)el.classList.remove("show");
+  });
 }
 
 function refreshAccountUI(){
- const logged=!!supabaseSessionUser,label=$("accountNavLabel"),title=$("accountPageTitle"),role=$("accountRoleBadge"),note=$("accountPageNote"),page=$("accountPage");
- if(page){page.classList.toggle('loggedIn',logged);page.classList.toggle('loggedOut',!logged)}
- if(label)label.textContent=logged?'帳號':'登入';if(title)title.textContent=logged?(supabaseSessionUser.email||supabaseProfile?.display_name||'已登入'):'尚未登入';if(role)role.textContent=logged?String(supabaseProfile?.role||'MEMBER').toUpperCase():'GUEST';if(note)note.textContent=logged?'已登入，可同步家庭旅行資料。':'登入後可同步家庭旅行資料。';
-;applyLoggedOutWriteLock()}
+  const logged=!!supabaseSessionUser;
+  const label=$("accountNavLabel"),title=$("accountPageTitle"),role=$("accountRoleBadge"),
+        note=$("accountPageNote"),page=$("accountPage");
+
+  if(page){
+    page.classList.toggle("loggedIn",logged);
+    page.classList.toggle("loggedOut",!logged);
+  }
+
+  if(label)label.textContent=logged?"帳號":"登入";
+  if(title)title.textContent=logged?(supabaseSessionUser.email||supabaseProfile?.display_name||"已登入"):"尚未登入";
+  if(role)role.textContent=logged?String(supabaseProfile?.role||"MEMBER").toUpperCase():"GUEST";
+  if(note)note.textContent=logged?"已登入，可同步家庭旅行資料。":"登入後可同步家庭旅行資料。";
+
+  const adminPanel=$("adminMembers");
+  if(logged&&isSupabaseAdmin()){
+    if(adminPanel){
+      adminPanel.hidden=false;
+      adminPanel.style.display="";
+    }
+  }else{
+    clearSensitiveAccountUI();
+  }
+
+  nitaRenderHomeIconSetting();
+  applyLoggedOutWriteLock();
+}
 
 function renderJournal(){
   const page=$("journalPage");
@@ -2382,7 +3549,1135 @@ function openGenericCalendar(initial,cb){calendarTarget="__generic__";genericCal
 function openCalendar(target){calendarTarget=target;const value=$(target+"DateValue").value,[y,m]=value.split("-").map(Number);calYear=y;calMonth=m-1;pendingDate=value;renderCalendar();$("calendarOverlay").classList.add("show")}
 $("startDateBtn").onclick=()=>openCalendar("start");$("endDateBtn").onclick=()=>openCalendar("end");function renderCalendar(){$("calTitle").textContent=`${calYear}年${calMonth+1}月`;const g=$("calGrid");g.innerHTML="";const first=new Date(calYear,calMonth,1).getDay(),days=new Date(calYear,calMonth+1,0).getDate(),prev=new Date(calYear,calMonth,0).getDate();for(let i=0;i<42;i++){let d,y=calYear,m=calMonth,other=false;if(i<first){d=prev-first+i+1;m--;other=true;if(m<0){m=11;y--}}else if(i>=first+days){d=i-first-days+1;m++;other=true;if(m>11){m=0;y++}}else d=i-first+1;const iso=`${y}-${String(m+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`,b=document.createElement("button");b.className="cday"+(other?" other":"")+(iso===pendingDate?" selected":"");b.textContent=d;b.onclick=()=>{pendingDate=iso;calYear=y;calMonth=m;renderCalendar()};g.appendChild(b)}}$("prevMonth").onclick=()=>{calMonth--;if(calMonth<0){calMonth=11;calYear--}renderCalendar()};$("nextMonth").onclick=()=>{calMonth++;if(calMonth>11){calMonth=0;calYear++}renderCalendar()};$("calCancel").onclick=()=>$("calendarOverlay").classList.remove("show");$("calConfirm").onclick=()=>{if(calendarTarget==="__generic__"){const cb=genericCalendarCallback;genericCalendarCallback=null;$("calendarOverlay").classList.remove("show");if(cb)cb(pendingDate);return}$(calendarTarget+"DateValue").value=pendingDate;$(calendarTarget+"DateBtn").textContent=fmtZh(pendingDate);$("calendarOverlay").classList.remove("show")};
 
-function openViewer(images,index){if(!images.length)return;viewerImages=images;viewerIndex=index;$("viewerImg").src=viewerImages[viewerIndex];$("viewerOverlay").classList.add("show")}$("viewerClose").onclick=()=>$("viewerOverlay").classList.remove("show");$("viewerPrev").onclick=()=>{viewerIndex=(viewerIndex-1+viewerImages.length)%viewerImages.length;$("viewerImg").src=viewerImages[viewerIndex]};$("viewerNext").onclick=()=>{viewerIndex=(viewerIndex+1)%viewerImages.length;$("viewerImg").src=viewerImages[viewerIndex]};
+
+/* =========================================================
+   FINAL OVERRIDE LAYER
+   ========================================================= */
+const nitaUiState=load("nitaUiStateV2",{collapsed:{},sections:{},headerCollapsed:false});
+let nitaPendingFocus=null;
+function nitaSaveUi(){save("nitaUiStateV2",nitaUiState)}
+function nitaItemId(item,prefix="item"){
+  if(item?.id)return item.id;
+  if(item?._cloudId)return item._cloudId;
+  if(!item._uiId)item._uiId=prefix+"_"+Date.now()+"_"+Math.random().toString(36).slice(2,8);
+  return item._uiId;
+}
+function nitaCollapsed(key,def=false){return key in nitaUiState.collapsed?!!nitaUiState.collapsed[key]:def}
+function nitaSetCollapsed(key,v){nitaUiState.collapsed[key]=!!v;nitaSaveUi()}
+function nitaSectionCollapsed(key,def=false){return key in nitaUiState.sections?!!nitaUiState.sections[key]:def}
+function nitaSetSectionCollapsed(key,v){nitaUiState.sections[key]=!!v;nitaSaveUi()}
+function nitaFocusCard(id){
+  nitaPendingFocus=id;
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    const el=document.querySelector(`[data-focus-id="${CSS.escape(String(id))}"]`);
+    if(el){el.scrollIntoView({behavior:"smooth",block:"center"});nitaPendingFocus=null}
+  }));
+}
+function nitaPrettyUrl(u){try{return new URL(u).hostname.replace(/^www\./,"")}catch{return u}}
+function nitaPhotoHtml(src,i,total){
+  return `<div class="thumb" data-view-photo="${i}"><img src="${escapeAttr(src)}" alt=""></div>`;
+}
+function nitaRenderPhotoView(images){
+  const valid=(images||[]).filter(Boolean);
+  return valid.length?`<div class="cleanPhotos">${valid.map((src,i)=>nitaPhotoHtml(src,i,valid.length)).join("")}</div>`:"";
+}
+function nitaBindPhotoView(root,images){
+  const valid=(images||[]).filter(Boolean);
+  root.querySelectorAll("[data-view-photo]").forEach(el=>el.onclick=()=>openViewer(valid,Number(el.dataset.viewPhoto)||0));
+}
+function nitaLinksView(links){
+  const arr=(links||[]).map(x=>typeof x==="string"?x:(x.url||x.file_path||x.caption||"")).map(cloudNormalizeUrl).filter(Boolean);
+  return arr.length?`<div class="cleanLinks">${arr.map(u=>`<a class="cleanLink" href="#" data-open-url="${escapeAttr(u)}">🔗 <span>${escapeHtml(nitaPrettyUrl(u))}</span></a>`).join("")}</div>`:"";
+}
+function nitaBindLinks(root){
+  root.querySelectorAll("[data-open-url]").forEach(a=>a.onclick=e=>{e.preventDefault();openDirectUrl(a.dataset.openUrl)});
+}
+function nitaLocalMove(arr,idx,dir,rerender){
+  const to=idx+dir;if(to<0||to>=arr.length)return;
+  [arr[idx],arr[to]]=[arr[to],arr[idx]];
+  persistTrips();rerender();
+}
+async function nitaCloudReorderItinerary(rows,idx,dir,di){
+  const to=idx+dir;if(to<0||to>=rows.length)return;
+  if(!(await cloudItineraryHasSortOrder())){toast("Supabase 尚未有 sort_order");return}
+  const ordered=[...rows];[ordered[idx],ordered[to]]=[ordered[to],ordered[idx]];
+  for(let i=0;i<ordered.length;i++){
+    const {error}=await supabaseClient.from("itinerary_items").update({sort_order:i+1}).eq("id",ordered[i].id);
+    if(error){toast("排序失敗："+error.message);return}
+  }
+  await renderCloudScheduleList(di);
+}
+async function nitaCloudReorderBackup(rows,idx,dir,di,map){
+  const to=idx+dir;if(to<0||to>=rows.length)return;
+  if(!map.sort_order){toast("Supabase 尚未有備用行程 sort_order");return}
+  const ordered=[...rows];[ordered[idx],ordered[to]]=[ordered[to],ordered[idx]];
+  for(let i=0;i<ordered.length;i++){
+    const {error}=await supabaseClient.from("backup_plans").update({[map.sort_order]:i+1}).eq(map.id,ordered[i][map.id]);
+    if(error){toast("排序失敗："+error.message);return}
+  }
+  await renderCloudBackup(di);
+}
+function nitaModalImagesHtml(id,label="照片"){
+  return `<div class="field"><span class="label">${label}</span><div class="editPhotoGrid" id="${id}"></div><label class="smallBtn">＋ 插入照片<input type="file" multiple accept="image/*" data-modal-photo-input="${id}" hidden></label></div>`;
+}
+function nitaLocalEditSchedule(item,di,isNew=false){
+  const tempPhotos=[...(item.photos||[])],tempLinks=[...(item.links||[])];
+  openForm(isNew?"新增行程":"修改行程",`<div class="cleanEditForm">
+    <div class="field"><span class="label">行程名稱</span><input class="input oneLineTitle" id="editPlace" value="${escapeAttr(item.place||"")}" placeholder="例如：阿倍野 HARUKAS"></div>
+    <div class="twoEdit"><div class="field"><span class="label">時間</span><input class="input" id="editTime" value="${escapeAttr(item.time||"")}" placeholder="18:00"></div><div class="field"><span class="label">類型 / 簡短標籤</span><input class="input" id="editType" value="${escapeAttr(item.type||"")}" placeholder="景點 / 晚餐"></div></div>
+    <div class="field"><span class="label">介紹 / 備註</span><textarea class="input" rows="3" id="editDesc">${escapeHtml(item.desc||"")}</textarea></div>
+    <div class="field"><span class="label">網址</span><div id="editLinks"></div><button class="smallBtn" id="editAddLink" type="button">＋ 新增網址</button></div>
+    ${nitaModalImagesHtml("editPhotos")}
+  </div>`,()=>{
+    item.place=$("editPlace").value.trim();
+    item.time=$("editTime").value.trim();
+    item.type=$("editType").value.trim();
+    item.desc=$("editDesc").value;
+    item.links=tempLinks;item.photos=tempPhotos;
+    persistTrips();renderScheduleList(di);nitaFocusCard(nitaItemId(item,"sched"));return true
+  });
+  const redrawLinks=()=>{const b=$("editLinks");b.innerHTML=tempLinks.map((u,i)=>`<div class="cleanLink">🔗 <span class="grow">${escapeHtml(nitaPrettyUrl(normalizeUrl(u)))}</span><button class="iconAction" data-del-link="${i}" type="button">×</button></div>`).join("");b.querySelectorAll("[data-del-link]").forEach(x=>x.onclick=()=>{tempLinks.splice(Number(x.dataset.delLink),1);redrawLinks()})};
+  const redrawPhotos=()=>{renderPhotoThumbs(tempPhotos,$("editPhotos"),i=>{tempPhotos.splice(i,1);redrawPhotos()})};
+  redrawLinks();redrawPhotos();
+  $("editAddLink").onclick=()=>openSimpleTextForm("新增網址","網址","https://",v=>{tempLinks.push(v);redrawLinks();return true});
+  document.querySelector('[data-modal-photo-input="editPhotos"]').onchange=async e=>{for(const f of [...e.target.files]){const im=await compressImage(f,1200,.82);if(im)tempPhotos.push(im)}e.target.value="";redrawPhotos()};
+}
+function nitaLocalEditBackup(item,di,isNew=false){
+  const tempPhotos=[...(item.photos||[])],tempLinks=[...(item.links||[])];
+  openForm(isNew?"新增備用行程":"修改備用行程",`<div class="cleanEditForm">
+    <div class="field"><span class="label">備用行程名稱</span><input class="input oneLineTitle" id="editBackupLabel" value="${escapeAttr(item.label||"")}" placeholder="例如：海遊館"></div>
+    <div class="field"><span class="label">地點</span><input class="input" id="editBackupPlace" value="${escapeAttr(item.place||"")}" placeholder="地址 / 地點"></div>
+    <div class="field"><span class="label">介紹 / 備註</span><textarea class="input" rows="3" id="editBackupDesc">${escapeHtml(item.desc||"")}</textarea></div>
+    <div class="field"><span class="label">網址</span><div id="editBackupLinks"></div><button class="smallBtn" id="editBackupAddLink" type="button">＋ 新增網址</button></div>
+    ${nitaModalImagesHtml("editBackupPhotos")}
+  </div>`,()=>{
+    item.label=$("editBackupLabel").value.trim();
+    item.place=$("editBackupPlace").value.trim();
+    item.desc=$("editBackupDesc").value;
+    item.links=tempLinks;item.photos=tempPhotos;
+    persistTrips();renderBackup(di);nitaRefreshBackupSummary(di);nitaFocusCard(nitaItemId(item,"backup"));return true
+  });
+  const redrawLinks=()=>{const b=$("editBackupLinks");b.innerHTML=tempLinks.map((u,i)=>`<div class="cleanLink">🔗 <span class="grow">${escapeHtml(nitaPrettyUrl(normalizeUrl(u)))}</span><button class="iconAction" data-del-link="${i}" type="button">×</button></div>`).join("");b.querySelectorAll("[data-del-link]").forEach(x=>x.onclick=()=>{tempLinks.splice(Number(x.dataset.delLink),1);redrawLinks()})};
+  const redrawPhotos=()=>{renderPhotoThumbs(tempPhotos,$("editBackupPhotos"),i=>{tempPhotos.splice(i,1);redrawPhotos()})};
+  redrawLinks();redrawPhotos();
+  $("editBackupAddLink").onclick=()=>openSimpleTextForm("新增網址","網址","https://",v=>{tempLinks.push(v);redrawLinks();return true});
+  document.querySelector('[data-modal-photo-input="editBackupPhotos"]').onchange=async e=>{for(const f of [...e.target.files]){const im=await compressImage(f,1200,.82);if(im)tempPhotos.push(im)}e.target.value="";redrawPhotos()};
+}
+
+async function nitaUploadItineraryPhotosInModal(row,files,labelEl,assets,box,di){
+  const t=currentTrip();
+  if(!cloudCanEditTrip(row.trip_id)){toast("VIEWER 只能查看，不能上傳照片");return}
+  const list=[...(files||[])];if(!list.length)return;
+  if(labelEl)labelEl.classList.add("cloudPhotoUploading");
+  try{
+    for(let i=0;i<list.length;i++){
+      const f=list[i];
+      if(!String(f.type||"").startsWith("image/"))continue;
+      const ext=cloudSafeExt(f),filename=`itinerary-${row.id}-${Date.now()}-${i}.${ext}`;
+      const path=`${t.id}/${supabaseSessionUser.id}/${filename}`;
+      const {error:upErr}=await supabaseClient.storage.from("travel-images").upload(path,f,{upsert:false,contentType:f.type||undefined});
+      if(upErr)throw upErr;
+      const {data:a,error:dbErr}=await supabaseClient.from("attachments").insert({
+        trip_id:row.trip_id,attachment_type:"itinerary_photo",parent_id:row.id,file_path:path,
+        file_name:f.name||filename,mime_type:f.type||null,caption:""
+      }).select("id,parent_id,file_path,caption,uploaded_by,attachment_type").single();
+      if(dbErr){await supabaseClient.storage.from("travel-images").remove([path]);throw dbErr}
+      const signed=await supabaseClient.storage.from("travel-images").createSignedUrl(path,3600);
+      assets.photos.push({...a,signedUrl:signed.error?"":(signed.data?.signedUrl||"")});
+      cloudRenderPhotos(row,assets,box,di);
+    }
+    toast("照片已加入");
+  }catch(err){
+    toast("照片上傳失敗："+(err.message||String(err)));
+  }finally{
+    if(labelEl)labelEl.classList.remove("cloudPhotoUploading");
+  }
+}
+
+async function nitaUploadBackupPhotosInModal(row,files,labelEl,assets,box,di){
+  if(!cloudCanEditTrip(row.trip_id)){toast("VIEWER 只能查看，不能上傳照片");return}
+  const list=[...(files||[])];if(!list.length)return;
+  const original=labelEl?.textContent||"＋ 插入照片";
+  if(labelEl)labelEl.textContent="照片上傳中…";
+  try{
+    for(let i=0;i<list.length;i++){
+      const f=list[i];
+      if(!String(f.type||"").startsWith("image/"))continue;
+      const ext=cloudSafeExt(f),filename=`backup-${row.id}-${Date.now()}-${i}.${ext}`;
+      const path=`${row.trip_id}/${supabaseSessionUser.id}/${filename}`;
+      const {error:upErr}=await supabaseClient.storage.from("travel-images").upload(path,f,{upsert:false,contentType:f.type||undefined});
+      if(upErr)throw upErr;
+      const {data:a,error:dbErr}=await supabaseClient.from("attachments").insert({
+        trip_id:row.trip_id,attachment_type:"backup_photo",parent_id:row.id,file_path:path,
+        file_name:f.name||filename,mime_type:f.type||null,caption:""
+      }).select("id,parent_id,file_path,caption,uploaded_by,attachment_type").single();
+      if(dbErr){await supabaseClient.storage.from("travel-images").remove([path]);throw dbErr}
+      const signed=await supabaseClient.storage.from("travel-images").createSignedUrl(path,3600);
+      assets.photos.push({...a,signedUrl:signed.error?"":(signed.data?.signedUrl||"")});
+      cloudRenderBackupPhotos(row,assets,box,di);
+    }
+    toast("備用行程照片已加入");
+  }catch(err){
+    toast("照片上傳失敗："+(err.message||String(err)));
+  }finally{
+    if(labelEl)labelEl.textContent=original;
+  }
+}
+
+async function nitaCloudEditSchedule(row,assets,di,isNew=false){
+  assets=assets||{links:[],photos:[]};
+  openForm(isNew?"新增行程":"修改行程",`<div class="cleanEditForm">
+    <div class="field"><span class="label">行程名稱</span><input class="input oneLineTitle" id="cEditPlace" value="${escapeAttr(row.place_name||"")}" placeholder="例如：阿倍野 HARUKAS"></div>
+    <div class="twoEdit"><div class="field"><span class="label">時間</span><input class="input" id="cEditTime" value="${escapeAttr(row.time_text||"")}" placeholder="18:00"></div><div class="field"><span class="label">類型 / 簡短標籤</span><input class="input" id="cEditType" value="${escapeAttr(row.item_type||"")}" placeholder="景點 / 晚餐"></div></div>
+    <div class="field"><span class="label">介紹 / 備註</span><textarea class="input" rows="3" id="cEditDesc">${escapeHtml(row.description||"")}</textarea></div>
+    <div class="field"><span class="label">網址</span><div id="cEditLinks"></div><button class="smallBtn" id="cEditAddLink" type="button">＋ 新增網址</button></div>
+    <div class="field"><span class="label">照片</span><div class="editPhotoGrid" id="cEditPhotos"></div><label class="smallBtn" id="cEditUploadLabel">＋ 插入照片<input id="cEditPhotoInput" type="file" multiple accept="image/*" hidden></label></div>
+  </div>`,async()=>{
+    const payload={
+      place_name:$("cEditPlace").value.trim(),
+      time_text:$("cEditTime").value.trim(),
+      item_type:$("cEditType").value.trim(),
+      description:$("cEditDesc").value
+    };
+    const {error}=await supabaseClient.from("itinerary_items").update(payload).eq("id",row.id);
+    if(error){toast("儲存失敗："+error.message);return false}
+    await renderCloudScheduleList(di);
+    nitaFocusCard(row.id);
+    return true;
+  });
+
+  const photosBox=$("cEditPhotos");
+  const redrawPhotos=()=>cloudRenderPhotos(row,assets,photosBox,di);
+  redrawPhotos();
+  cloudRenderLinks(row,assets,$("cEditLinks"),di,true);
+
+  $("cEditAddLink").onclick=()=>openSimpleTextForm("新增網址","網址","https://",async v=>{
+    const url=cloudNormalizeUrl(v);if(!url)return false;
+    const {data:a,error}=await supabaseClient.from("attachments").insert({
+      trip_id:row.trip_id,attachment_type:"itinerary_link",parent_id:row.id,
+      file_path:url,file_name:"網址",mime_type:"text/uri-list",caption:url
+    }).select("id,parent_id,file_path,caption,uploaded_by,attachment_type").single();
+    if(error){toast("新增網址失敗："+error.message);return false}
+    assets.links.push({...a,url});
+    cloudRenderLinks(row,assets,$("cEditLinks"),di,true);
+    return true;
+  });
+
+  $("cEditPhotoInput").onchange=e=>{
+    const fs=[...e.target.files];e.target.value="";
+    void nitaUploadItineraryPhotosInModal(row,fs,$("cEditUploadLabel"),assets,photosBox,di);
+  };
+}
+async function nitaCloudEditBackup(row,assets,di,map,isNew=false){
+  assets=assets||{links:[],photos:[]};
+  openForm(isNew?"新增備用行程":"修改備用行程",`<div class="cleanEditForm">
+    <div class="field"><span class="label">備用行程名稱</span><input class="input oneLineTitle" id="cbLabel" value="${escapeAttr(row._label||"")}" placeholder="例如：海遊館"></div>
+    <div class="field"><span class="label">地點</span><input class="input" id="cbPlace" value="${escapeAttr(row._place||"")}" placeholder="地址 / 地點"></div>
+    <div class="field"><span class="label">介紹 / 備註</span><textarea class="input" rows="3" id="cbDesc">${escapeHtml(row._description||"")}</textarea></div>
+    <div class="field"><span class="label">網址</span><div id="cbLinks"></div><button class="smallBtn" id="cbAddLink" type="button">＋ 新增網址</button></div>
+    <div class="field"><span class="label">照片</span><div class="editPhotoGrid" id="cbPhotos"></div><label class="smallBtn" id="cbUploadLabel">＋ 插入照片<input id="cbPhotoInput" type="file" multiple accept="image/*" hidden></label></div>
+  </div>`,async()=>{
+    const payload={};
+    if(map.label)payload[map.label]=$("cbLabel").value.trim();
+    if(map.place)payload[map.place]=$("cbPlace").value.trim();
+    if(map.description)payload[map.description]=$("cbDesc").value;
+    const {error}=await supabaseClient.from("backup_plans").update(payload).eq(map.id,row[map.id]);
+    if(error){toast("儲存失敗："+error.message);return false}
+    await renderCloudBackup(di);
+    nitaFocusCard(row[map.id]);
+    return true;
+  });
+
+  const photosBox=$("cbPhotos");
+  cloudRenderBackupLinks(row,assets,$("cbLinks"),di);
+  cloudRenderBackupPhotos(row,assets,photosBox,di);
+
+  $("cbAddLink").onclick=()=>openSimpleTextForm("新增網址","網址","https://",async v=>{
+    const url=cloudNormalizeUrl(v);if(!url)return false;
+    const {data:a,error}=await supabaseClient.from("attachments").insert({
+      trip_id:row.trip_id,attachment_type:"backup_link",parent_id:row[map.id],
+      file_path:url,file_name:"網址",mime_type:"text/uri-list",caption:url
+    }).select("id,parent_id,file_path,caption,uploaded_by,attachment_type").single();
+    if(error){toast("新增網址失敗："+error.message);return false}
+    assets.links.push({...a,url});
+    cloudRenderBackupLinks(row,assets,$("cbLinks"),di);
+    return true;
+  });
+
+  $("cbPhotoInput").onchange=e=>{
+    const fs=[...e.target.files];e.target.value="";
+    void nitaUploadBackupPhotosInModal(row,fs,$("cbUploadLabel"),assets,photosBox,di);
+  };
+}
+
+/* ---------- clean local schedule ---------- */
+function renderScheduleList(di){
+  const t=currentTrip();
+  if(t?.supabase){void renderCloudScheduleList(di);return}
+  const d=t.days[di],box=$("scheduleList");box.innerHTML="";
+  if(!d.schedule.length){
+    box.innerHTML=`<div class="card mini">目前沒有行程，按下「＋ 新增行程」。</div>`;
+    nitaRefreshScheduleSummary(di);
+    return
+  }
+
+  const timeline=document.createElement("div");
+  timeline.className="timelineList";
+  box.appendChild(timeline);
+
+  d.schedule.forEach((item,idx)=>{
+    item.links=item.links||[];
+    item.photos=item.photos||[];
+    const id=nitaItemId(item,"sched");
+    const wrap=document.createElement("div");
+    wrap.className="timelineItem";
+    wrap.dataset.focusId=id;
+
+    wrap.innerHTML=`
+      <div class="timelineTime">${escapeHtml(item.time||"--:--")}</div>
+      <div class="cleanItineraryCard">
+        <div class="cleanItineraryHead">
+          <div>
+            <div class="cleanItineraryTitle">${escapeHtml(item.place||item.type||"未命名行程")}</div>
+            <div class="cleanItinerarySub">${escapeHtml(item.type||"")}</div>
+          </div>
+          <div class="cleanActionRow">
+            <button class="iconAction" data-act="edit" type="button" aria-label="修改">✎</button>
+            <button class="iconAction" data-act="up" type="button"${idx===0?" disabled":""}>↑</button>
+            <button class="iconAction" data-act="down" type="button"${idx===d.schedule.length-1?" disabled":""}>↓</button>
+            <button class="iconAction" data-act="delete" type="button">⌫</button>
+            <button class="navMiniBtn" data-act="nav" type="button">導航</button>
+          </div>
+        </div>
+        <div class="cleanBody">
+          ${item.desc?`<div class="cleanDesc">${escapeHtml(item.desc)}</div>`:""}
+          ${nitaRenderPhotoView(item.photos)}
+          ${nitaLinksView(item.links)}
+        </div>
+      </div>`;
+
+    wrap.querySelector('[data-act="edit"]').onclick=()=>nitaLocalEditSchedule(item,di,false);
+    wrap.querySelector('[data-act="up"]').onclick=()=>nitaLocalMove(d.schedule,idx,-1,()=>{renderScheduleList(di);nitaRefreshScheduleSummary(di)});
+    wrap.querySelector('[data-act="down"]').onclick=()=>nitaLocalMove(d.schedule,idx,1,()=>{renderScheduleList(di);nitaRefreshScheduleSummary(di)});
+    wrap.querySelector('[data-act="delete"]').onclick=()=>{
+      if(!confirm("確定刪除這筆行程？"))return;
+      d.schedule.splice(idx,1);persistTrips();renderScheduleList(di);nitaRefreshScheduleSummary(di);
+    };
+    wrap.querySelector('[data-act="nav"]').onclick=()=>nitaNavigatePlace(item.place||item.type||"");
+
+    nitaBindPhotoView(wrap,item.photos);
+    nitaBindLinks(wrap);
+    timeline.appendChild(wrap);
+  });
+
+  nitaRefreshScheduleSummary(di);
+  if(nitaPendingFocus)nitaFocusCard(nitaPendingFocus);
+}
+
+/* ---------- clean cloud schedule ---------- */
+async function renderCloudScheduleList(di){
+  const t=currentTrip(),box=$("scheduleList");
+  if(!box||!t?.supabase)return;
+
+  const canEdit=cloudCanEditTrip(t.id),addBtn=$("addScheduleBtn");
+  if(addBtn){addBtn.style.display=canEdit?"":"none";addBtn.disabled=!canEdit}
+
+  box.innerHTML=`<div class="card mini">正在讀取每日行程…</div>`;
+
+  try{
+    const rows=await cloudLoadItineraryRows(di);
+    const assetMap=await cloudLoadItineraryAssets(rows);
+    box.innerHTML="";
+
+    if(!rows.length){
+      box.innerHTML=`<div class="card mini">${canEdit?'目前沒有行程，按下「＋ 新增行程」。':'目前沒有每日行程。'}</div>`;
+      nitaRefreshScheduleSummary(di,[],assetMap);
+      return
+    }
+
+    const timeline=document.createElement("div");
+    timeline.className="timelineList";
+    box.appendChild(timeline);
+
+    rows.forEach((row,idx)=>{
+      const assets=assetMap[row.id]||{links:[],photos:[]};
+      const photos=(assets.photos||[]).map(a=>a.signedUrl).filter(Boolean);
+      const canDelete=cloudCanDeleteItinerary(row);
+
+      const wrap=document.createElement("div");
+      wrap.className="timelineItem";
+      wrap.dataset.focusId=row.id;
+
+      wrap.innerHTML=`
+        <div class="timelineTime">${escapeHtml(row.time_text||"--:--")}</div>
+        <div class="cleanItineraryCard">
+          <div class="cleanItineraryHead">
+            <div>
+              <div class="cleanItineraryTitle">${escapeHtml(row.place_name||row.item_type||"未命名行程")}</div>
+              <div class="cleanItinerarySub">${escapeHtml(row.item_type||"")}</div>
+            </div>
+            <div class="cleanActionRow">
+              ${canEdit?'<button class="iconAction" data-act="edit" type="button">✎</button>':""}
+              ${canEdit?`<button class="iconAction" data-act="up" type="button"${idx===0?" disabled":""}>↑</button><button class="iconAction" data-act="down" type="button"${idx===rows.length-1?" disabled":""}>↓</button>`:""}
+              ${canDelete?'<button class="iconAction" data-act="delete" type="button">⌫</button>':""}
+              <button class="navMiniBtn" data-act="nav" type="button">導航</button>
+            </div>
+          </div>
+          <div class="cleanBody">
+            ${row.description?`<div class="cleanDesc">${escapeHtml(row.description)}</div>`:""}
+            ${nitaRenderPhotoView(photos)}
+            ${nitaLinksView(assets.links)}
+          </div>
+        </div>`;
+
+      const edit=wrap.querySelector('[data-act="edit"]');if(edit)edit.onclick=()=>void nitaCloudEditSchedule(row,assets,di,false);
+      const up=wrap.querySelector('[data-act="up"]');if(up)up.onclick=()=>void nitaCloudReorderItinerary(rows,idx,-1,di);
+      const down=wrap.querySelector('[data-act="down"]');if(down)down.onclick=()=>void nitaCloudReorderItinerary(rows,idx,1,di);
+      const del=wrap.querySelector('[data-act="delete"]');if(del)del.onclick=()=>void cloudDeleteItinerary(row,di);
+      wrap.querySelector('[data-act="nav"]').onclick=()=>nitaNavigatePlace(row.place_name||row.item_type||"");
+
+      nitaBindPhotoView(wrap,photos);
+      nitaBindLinks(wrap);
+      timeline.appendChild(wrap);
+    });
+
+    nitaRefreshScheduleSummary(di,rows,assetMap);
+    if(nitaPendingFocus)nitaFocusCard(nitaPendingFocus);
+  }catch(err){
+    box.innerHTML=`<div class="card mini" style="color:#8B6663">讀取每日行程失敗：${escapeHtml(err.message||String(err))}</div>`;
+  }
+}
+async function cloudCreateItinerary(di){
+  const t=currentTrip(),day=t?.days?.[di];
+  if(!supabaseSessionUser||!supabaseClient||!cloudCanEditTrip(t.id)||!day?.supabaseDayId){toast("目前無法新增行程");return}
+  const payload={trip_id:t.id,trip_day_id:day.supabaseDayId,time_text:"",item_type:"",place_name:"",description:""};
+  if(await cloudItineraryHasSortOrder()){const rows=await cloudLoadItineraryRows(di);payload.sort_order=Math.max(0,...rows.map(r=>Number(r.sort_order)||0))+1}
+  const {data,error}=await supabaseClient.from("itinerary_items").insert(payload).select("id,trip_id,trip_day_id,time_text,item_type,place_name,description,created_by,created_at,sort_order").single();
+  if(error){toast("新增失敗："+error.message);return}
+  nitaPendingFocus=data.id;await renderCloudScheduleList(di);
+  const assets={links:[],photos:[]};void nitaCloudEditSchedule(data,assets,di,true);
+}
+
+/* ---------- clean local backup ---------- */
+function renderBackup(di){
+  const t=currentTrip();if(t?.supabase){void renderCloudBackup(di);return}
+  const d=t.days[di],box=$("backupList");box.innerHTML="";
+  if(!d.backup.length){
+    box.innerHTML=`<div class="mini" style="padding:8px 0">目前沒有備用行程。</div>`;
+    nitaRefreshBackupSummary(di);return
+  }
+
+  d.backup.forEach((item,idx)=>{
+    item.links=item.links||[];item.photos=item.photos||[];
+    const id=nitaItemId(item,"backup"),key=`b:${t.id}:${di}:${id}`,collapsed=nitaCollapsed(key,false);
+    const c=document.createElement("div");c.className="cleanItineraryCard";c.dataset.focusId=id;
+
+    c.innerHTML=`
+      <div class="cleanItineraryHead">
+        <div>
+          <div class="cleanItineraryTitle">${escapeHtml(item.label||item.place||"未命名備用行程")}</div>
+          <div class="cleanItinerarySub">${escapeHtml(item.place||"")}</div>
+        </div>
+        <div class="cleanActionRow">
+          <button class="iconAction" data-act="edit" type="button">✎</button>
+          <button class="iconAction" data-act="up" type="button"${idx===0?" disabled":""}>↑</button>
+          <button class="iconAction" data-act="down" type="button"${idx===d.backup.length-1?" disabled":""}>↓</button>
+          <button class="iconAction" data-act="delete" type="button">⌫</button>
+          <button class="iconAction" data-act="collapse" type="button">${collapsed?"⌄":"⌃"}</button>
+          <button class="navMiniBtn" data-act="nav" type="button">導航</button>
+        </div>
+      </div>
+      <div class="cleanBody${collapsed?" hidden":""}">
+        ${item.desc?`<div class="cleanDesc">${escapeHtml(item.desc)}</div>`:""}
+        ${nitaRenderPhotoView(item.photos)}
+        ${nitaLinksView(item.links)}
+      </div>`;
+
+    c.querySelector('[data-act="edit"]').onclick=()=>nitaLocalEditBackup(item,di,false);
+    c.querySelector('[data-act="up"]').onclick=()=>nitaLocalMove(d.backup,idx,-1,()=>{renderBackup(di);nitaRefreshBackupSummary(di)});
+    c.querySelector('[data-act="down"]').onclick=()=>nitaLocalMove(d.backup,idx,1,()=>{renderBackup(di);nitaRefreshBackupSummary(di)});
+    c.querySelector('[data-act="delete"]').onclick=()=>{if(!confirm("確定刪除這筆備用行程？"))return;d.backup.splice(idx,1);persistTrips();renderBackup(di);nitaRefreshBackupSummary(di)};
+    c.querySelector('[data-act="collapse"]').onclick=e=>{const nv=!nitaCollapsed(key,false);nitaSetCollapsed(key,nv);c.querySelector(".cleanBody").classList.toggle("hidden",nv);e.currentTarget.textContent=nv?"⌄":"⌃"};
+    c.querySelector('[data-act="nav"]').onclick=()=>nitaNavigatePlace(item.place||item.label||"");
+
+    nitaBindPhotoView(c,item.photos);nitaBindLinks(c);box.appendChild(c);
+  });
+
+  nitaRefreshBackupSummary(di);
+  if(nitaPendingFocus)nitaFocusCard(nitaPendingFocus);
+}
+
+/* ---------- clean cloud backup ---------- */
+async function renderCloudBackup(di){
+  const t=currentTrip(),box=$("backupList");if(!box||!t?.supabase)return;
+  const canEdit=cloudCanEditTrip(t.id),btn=$("addBackupBtn");
+  if(btn){btn.style.display=canEdit?"":"none";btn.disabled=!canEdit}
+  box.innerHTML=`<div class="mini" style="padding:8px 0">正在讀取備用行程…</div>`;
+
+  try{
+    const map=await cloudGetBackupSchema(),rows=await cloudLoadBackupRows(di),assetMap=await cloudLoadBackupAssets(rows,map);
+    box.innerHTML="";
+    if(!rows.length){
+      box.innerHTML='<div class="mini" style="padding:8px 0">目前沒有備用行程。</div>';
+      nitaRefreshBackupSummary(di,[],{},map);return
+    }
+
+    rows.forEach((row,idx)=>{
+      const assets=assetMap[row[map.id]]||{links:[],photos:[]};
+      const photos=(assets.photos||[]).map(a=>a.signedUrl).filter(Boolean);
+      const key=`cb:${t.id}:${di}:${row[map.id]}`;
+      const collapsed=nitaCollapsed(key,false),canDelete=cloudCanDeleteBackup(row);
+      const c=document.createElement("div");
+      c.className="cleanItineraryCard";c.dataset.focusId=row[map.id];
+
+      c.innerHTML=`
+        <div class="cleanItineraryHead">
+          <div>
+            <div class="cleanItineraryTitle">${escapeHtml(row._label||row._place||"未命名備用行程")}</div>
+            <div class="cleanItinerarySub">${escapeHtml(row._place||"")}</div>
+          </div>
+          <div class="cleanActionRow">
+            ${canEdit?'<button class="iconAction" data-act="edit" type="button">✎</button>':""}
+            ${canEdit?`<button class="iconAction" data-act="up" type="button"${idx===0?" disabled":""}>↑</button><button class="iconAction" data-act="down" type="button"${idx===rows.length-1?" disabled":""}>↓</button>`:""}
+            ${canDelete?'<button class="iconAction" data-act="delete" type="button">⌫</button>':""}
+            <button class="iconAction" data-act="collapse" type="button">${collapsed?"⌄":"⌃"}</button>
+            <button class="navMiniBtn" data-act="nav" type="button">導航</button>
+          </div>
+        </div>
+        <div class="cleanBody${collapsed?" hidden":""}">
+          ${row._description?`<div class="cleanDesc">${escapeHtml(row._description)}</div>`:""}
+          ${nitaRenderPhotoView(photos)}
+          ${nitaLinksView(assets.links)}
+        </div>`;
+
+      const edit=c.querySelector('[data-act="edit"]');if(edit)edit.onclick=()=>void nitaCloudEditBackup(row,assets,di,map,false);
+      const up=c.querySelector('[data-act="up"]');if(up)up.onclick=()=>void nitaCloudReorderBackup(rows,idx,-1,di,map);
+      const down=c.querySelector('[data-act="down"]');if(down)down.onclick=()=>void nitaCloudReorderBackup(rows,idx,1,di,map);
+      const del=c.querySelector('[data-act="delete"]');if(del)del.onclick=()=>void cloudDeleteBackup(row,assets,di);
+      c.querySelector('[data-act="collapse"]').onclick=e=>{const nv=!nitaCollapsed(key,false);nitaSetCollapsed(key,nv);c.querySelector(".cleanBody").classList.toggle("hidden",nv);e.currentTarget.textContent=nv?"⌄":"⌃"};
+      c.querySelector('[data-act="nav"]').onclick=()=>nitaNavigatePlace(row._place||row._label||"");
+
+      nitaBindPhotoView(c,photos);nitaBindLinks(c);box.appendChild(c);
+    });
+
+    nitaRefreshBackupSummary(di,rows,assetMap,map);
+    if(nitaPendingFocus)nitaFocusCard(nitaPendingFocus);
+  }catch(err){
+    box.innerHTML=`<div class="mini" style="padding:8px 0;color:#8B6663">讀取備用行程失敗：${escapeHtml(err.message||String(err))}</div>`;
+  }
+}
+async function cloudCreateBackupPlan(di){
+  const t=currentTrip(),day=t?.days?.[di];if(!supabaseClient||!supabaseSessionUser||!cloudCanEditTrip(t.id)||!day?.supabaseDayId){toast("目前無法新增備用行程");return}
+  const map=await cloudGetBackupSchema(),rows=await cloudLoadBackupRows(di),payload={[map.trip_id]:t.id,[map.trip_day_id]:day.supabaseDayId};
+  if(map.label)payload[map.label]="";if(map.place)payload[map.place]="";if(map.description)payload[map.description]="";if(map.sort_order)payload[map.sort_order]=Math.max(0,...rows.map((r,i)=>Number(r[map.sort_order])||i+1))+1;
+  const {data,error}=await supabaseClient.from("backup_plans").insert(payload).select("*").single();if(error){toast("新增備用行程失敗："+error.message);return}
+  const row=cloudBackupNormalizeRow(data,rows.length,map);nitaPendingFocus=row[map.id];await renderCloudBackup(di);void nitaCloudEditBackup(row,{links:[],photos:[]},di,map,true);
+}
+
+function nitaGallerySectionKey(kind,tripId,di){return `${kind}Section:${tripId}:${di}`}
+function nitaRenderGallerySummary(kind,di){
+  const t=currentTrip(),d=t?.days?.[di];
+  if(!t||!d)return;
+  const isShopping=kind==="shopping";
+  const list=isShopping?(d.shopping||[]):(d.pocketFood||[]);
+  const box=$(isShopping?"shoppingSummary":"foodSummary");
+  if(!box)return;
+
+  const collapsed=nitaSectionCollapsed(nitaGallerySectionKey(kind,t.id,di),false);
+  box.classList.toggle("hidden",!collapsed);
+  if(!collapsed){box.innerHTML="";return}
+
+  const shown=list.slice(0,8);
+  if(!shown.length){
+    box.innerHTML='<div class="gallerySummaryEmpty">目前沒有照片</div>';
+    return;
+  }
+  box.innerHTML=shown.map((item,i)=>`
+    <div class="gallerySummaryItem" data-summary-photo="${i}">
+      <img src="${escapeAttr(item.photo||"")}" alt="">
+      ${item.name?`<div class="gallerySummaryName">${escapeHtml(item.name)}</div>`:""}
+    </div>
+  `).join("");
+  const allPhotos=list.map(x=>x.photo).filter(Boolean);
+  box.querySelectorAll("[data-summary-photo]").forEach(el=>{
+    el.onclick=()=>{
+      const item=shown[Number(el.dataset.summaryPhoto)||0];
+      const idx=Math.max(0,allPhotos.indexOf(item.photo));
+      openViewer(allPhotos,idx);
+    };
+  });
+}
+
+
+
+function nitaNavigatePlace(raw){
+  const q=String(raw||"").trim();
+  if(!q){
+    toast("這筆行程尚未填寫地點");
+    return;
+  }
+
+  const t=currentTrip();
+  const city=String(t?.city||t?.name||"").trim();
+
+  // 若本身已像完整地址/座標，就直接使用；一般店名則補旅程城市，提高 Google Maps 命中正確地點的機率。
+  const looksLikeCoords=/^-?\d{1,3}(?:\.\d+)?\s*,\s*-?\d{1,3}(?:\.\d+)?$/.test(q);
+  const alreadyHasCity=city && q.toLowerCase().includes(city.toLowerCase());
+  const destination=(looksLikeCoords||alreadyHasCity||!city) ? q : `${q}, ${city}`;
+
+  const params=new URLSearchParams({
+    api:"1",
+    destination,
+    travelmode:"driving",
+    dir_action:"navigate"
+  });
+
+  // 不指定 origin：Google Maps 會使用裝置目前位置（若使用者已允許定位）。
+  window.location.assign("https://www.google.com/maps/dir/?"+params.toString());
+}
+
+function nitaRefreshScheduleSummary(di,cloudRows=null,assetMap=null){
+  const sum=$("scheduleSummary");
+  if(!sum)return;
+
+  const t=currentTrip();
+  const collapsed=nitaSectionCollapsed(`scheduleSection:${t.id}:${di}`,false);
+  sum.classList.toggle("hidden",!collapsed);
+
+  if(!collapsed){
+    sum.innerHTML="";
+    return;
+  }
+
+  let items=[];
+  if(t.supabase&&Array.isArray(cloudRows)){
+    items=cloudRows.map(r=>{
+      const a=assetMap?.[r.id]||{};
+      return{
+        time:r.time_text||"--:--",
+        name:r.place_name||r.item_type||"行程",
+        nav:r.place_name||r.item_type||"",
+        photo:(a.photos||[]).find(x=>x.signedUrl)?.signedUrl||""
+      };
+    });
+  }else{
+    items=(t.days?.[di]?.schedule||[]).map(x=>({
+      time:x.time||"--:--",
+      name:x.place||x.type||"行程",
+      nav:x.place||x.type||"",
+      photo:(x.photos||[])[0]||""
+    }));
+  }
+
+  sum.innerHTML=items.map((x,i)=>`
+    <div class="scheduleSummaryItem${x.photo?"":" noPhoto"}">
+      <div class="scheduleMiniTime">${escapeHtml(x.time)}</div>
+      ${x.photo?`<img class="scheduleSummaryThumb" src="${escapeAttr(x.photo)}" alt="">`:""}
+      <div class="scheduleSummaryName">${escapeHtml(x.name)}</div>
+      <button class="navMiniBtn scheduleSummaryNav" type="button" data-summary-nav="${i}">導航</button>
+    </div>
+  `).join("")||'<div class="mini">目前沒有行程</div>';
+
+  sum.querySelectorAll("[data-summary-nav]").forEach(btn=>{
+    btn.onclick=e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      const item=items[Number(btn.dataset.summaryNav)||0];
+      nitaNavigatePlace(item?.nav||item?.name||"");
+    };
+  });
+}
+
+function nitaRefreshBackupSummary(di,cloudRows=null,assetMap=null,map=null){
+  const sum=$("backupSummary");if(!sum)return;
+  const t=currentTrip(),collapsed=nitaSectionCollapsed(`backupSection:${t.id}:${di}`,false);
+  sum.classList.toggle("hidden",!collapsed);
+  if(!collapsed){sum.innerHTML="";return}
+
+  let items=[];
+  if(t.supabase&&Array.isArray(cloudRows)){
+    items=cloudRows.map(r=>{
+      const a=assetMap?.[r[map.id]]||{};
+      return{
+        name:r._label||r._place||"備用行程",
+        nav:r._place||r._label||"",
+        photo:(a.photos||[]).find(x=>x.signedUrl)?.signedUrl||""
+      };
+    });
+  }else{
+    items=(t.days[di].backup||[]).map(x=>({
+      name:x.label||x.place||"備用行程",
+      nav:x.place||x.label||"",
+      photo:(x.photos||[])[0]||""
+    }));
+  }
+
+  sum.innerHTML=items.map((x,i)=>`
+    <div class="backupSummaryItem${x.photo?"":" noPhoto"}">
+      ${x.photo?`<img class="backupSummaryThumb" src="${escapeAttr(x.photo)}" alt="">`:""}
+      <div class="backupSummaryName">${escapeHtml(x.name)}</div>
+      <button class="navMiniBtn backupSummaryNav" type="button" data-backup-summary-nav="${i}">導航</button>
+    </div>
+  `).join("")||'<div class="mini">目前沒有備用行程</div>';
+
+  sum.querySelectorAll("[data-backup-summary-nav]").forEach(btn=>{
+    btn.onclick=e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      const item=items[Number(btn.dataset.backupSummaryNav)||0];
+      nitaNavigatePlace(item?.nav||item?.name||"");
+    };
+  });
+}
+
+/* ---------- schedule page override with persistent section states ---------- */
+function renderSchedulePage(){
+  const t=currentTrip(),wrap=$("scheduleContent");ensureDays(t);
+
+  if(state.currentDay==="info"){
+    wrap.innerHTML=`<div class="section">天氣預報</div><div class="card"><div class="weatherStrip" id="weatherStrip"></div><div class="weatherStatus" id="weatherStatus">正在取得旅行目的地天氣…</div></div><div class="section">機票航班</div><div class="card flightCard" id="flightArea"></div><div class="section">注意事項</div><div class="card"><textarea class="input" rows="5" id="notesInput">${escapeHtml(t.notes||"")}</textarea></div><div class="section sectionTitleRow"><span>入境條碼</span><button class="collapseBare" id="qrCollapseBtn" type="button">⌃</button></div><div class="card" id="qrCard"><div class="qrGrid" id="qrGrid"></div></div>`;
+    renderWeather();refreshWeatherFromNetwork();renderFlight();renderQR();
+    $("notesInput").oninput=e=>{t.notes=e.target.value;persistTrips()};
+    $("qrCollapseBtn").onclick=()=>{
+      const c=$("qrCard"),hidden=c.style.display==="none";
+      c.style.display=hidden?"":"none";
+      $("qrCollapseBtn").textContent=hidden?"⌃":"⌄";
+    };
+    return;
+  }
+
+  const di=state.currentDay,d=t.days[di],iso=addDays(t.start,di);
+  const canEditHotel=!t.supabase||canEditCloudTrip(t.id);
+
+  const scheduleCollapsed=nitaSectionCollapsed(`scheduleSection:${t.id}:${di}`,false);
+  const backupCollapsed=nitaSectionCollapsed(`backupSection:${t.id}:${di}`,false);
+  const shoppingCollapsed=nitaSectionCollapsed(nitaGallerySectionKey("shopping",t.id,di),false);
+  const foodCollapsed=nitaSectionCollapsed(nitaGallerySectionKey("food",t.id,di),false);
+
+  wrap.innerHTML=`
+    <div class="card dayHotelCombined">
+      <div class="dayHotelRow">
+        <div class="dayHotelInfo">
+          <div class="dayTitle">Day ${di+1} · ${iso.slice(5).replace("-","/")}</div>
+          <div class="mini">${dow(iso)} · ${escapeHtml(t.city||t.name)}</div>
+        </div>
+        <input class="input" id="hotelInput" value="${escapeAttr(d.hotel||"")}" placeholder="住宿飯店"${canEditHotel?"":" disabled"}>
+        <button class="smallBtn" id="hotelNavBtn" type="button">導航</button>
+      </div>
+    </div>
+
+    <div class="section">探索地圖</div>
+    <div class="card">
+      <div class="dayGoogleMap" id="dayMap"></div>
+      <div class="dayMapToolbar"><button class="chip" id="dayLocateBtn" type="button">◎ 開啟我的即時定位</button></div>
+      <div class="mapStatus" id="dayMapStatus"></div>
+    </div>
+
+    <div class="section">每日行程</div>
+    <div class="scheduleSectionCard">
+      <div class="sectionHead" id="scheduleToggle">
+        <span>每日行程</span>
+        <button class="collapseBtn${scheduleCollapsed?"":" open"}" type="button">${scheduleCollapsed?"⌄":"⌃"}</button>
+      </div>
+
+      <div class="scheduleSummary${scheduleCollapsed?"":" hidden"}" id="scheduleSummary"></div>
+
+      <div class="collapsibleBody${scheduleCollapsed?" hidden":""}" id="scheduleBody">
+        <div id="scheduleList"></div>
+        <button class="primary" id="addScheduleBtn" type="button">＋ 新增行程</button>
+      </div>
+    </div>
+
+    <div class="section">備用行程</div>
+    <div class="card">
+      <div class="sectionHead" id="backupToggle">
+        <span>備用行程</span>
+        <button class="collapseBtn${backupCollapsed?"":" open"}" type="button">${backupCollapsed?"⌄":"⌃"}</button>
+      </div>
+      <div class="backupSummary${backupCollapsed?"":" hidden"}" id="backupSummary"></div>
+      <div class="collapsibleBody${backupCollapsed?" hidden":""}" id="backupBody">
+        <div id="backupList"></div>
+        <button class="primary" id="addBackupBtn" type="button">＋ 新增備用行程</button>
+      </div>
+    </div>
+
+    <div class="section">購物清單</div>
+    <div class="card">
+      <div class="sectionHead" id="shoppingToggle">
+        <span>購物清單</span>
+        <button class="collapseBtn${shoppingCollapsed?"":" open"}" type="button">${shoppingCollapsed?"⌄":"⌃"}</button>
+      </div>
+      <div class="galleryCollapseSummary${shoppingCollapsed?"":" hidden"}" id="shoppingSummary"></div>
+      <div class="collapsibleBody${shoppingCollapsed?" hidden":""}" id="shoppingBody">
+        <div class="photo4" id="shoppingGrid"></div>
+        <label class="smallBtn">＋ 從手機相簿插入商品照片<input id="shoppingInput" type="file" multiple accept="image/*" hidden></label>
+      </div>
+    </div>
+
+    <div class="section">口袋美食</div>
+    <div class="card">
+      <div class="sectionHead" id="foodToggle">
+        <span>口袋美食</span>
+        <button class="collapseBtn${foodCollapsed?"":" open"}" type="button">${foodCollapsed?"⌄":"⌃"}</button>
+      </div>
+      <div class="galleryCollapseSummary${foodCollapsed?"":" hidden"}" id="foodSummary"></div>
+      <div class="collapsibleBody${foodCollapsed?" hidden":""}" id="foodBody">
+        <div class="photo4" id="foodGrid"></div>
+        <label class="smallBtn">＋ 從手機相簿插入美食照片<input id="foodInput" type="file" multiple accept="image/*" hidden></label>
+      </div>
+    </div>
+  `;
+
+  initDayGoogleMap();
+  renderScheduleList(di);
+  renderBackup(di);
+
+  const rerenderShopping=()=>{persistTrips();renderGallery(d.shopping,$("shoppingGrid"),"商品名稱",rerenderShopping);nitaRenderGallerySummary("shopping",di)};
+  const rerenderFood=()=>{persistTrips();renderGallery(d.pocketFood,$("foodGrid"),"店名 / 想吃什麼",rerenderFood);nitaRenderGallerySummary("food",di)};
+
+  renderGallery(d.shopping,$("shoppingGrid"),"商品名稱",rerenderShopping);
+  renderGallery(d.pocketFood,$("foodGrid"),"店名 / 想吃什麼",rerenderFood);
+  nitaRenderGallerySummary("shopping",di);
+  nitaRenderGallerySummary("food",di);
+
+  if(canEditHotel){
+    $("hotelInput").oninput=e=>queueDayHotelSave(t,d,e.target.value);
+    $("hotelInput").onchange=e=>{
+      clearTimeout(dayHotelSaveTimers[d.supabaseDayId]);
+      d.hotel=e.target.value;
+      persistTrips();
+      if(t.supabase)void saveDayHotelCloud(t.id,d.supabaseDayId,e.target.value);
+    };
+  }
+
+  $("hotelNavBtn").onclick=()=>navigateHotel(d.hotel);
+
+  $("addScheduleBtn").onclick=async()=>{
+    if(t.supabase){await cloudCreateItinerary(di);return}
+    const item={time:"",type:"",place:"",desc:"",links:[],photos:[]};
+    d.schedule.push(item);
+    persistTrips();
+    nitaPendingFocus=nitaItemId(item,"sched");
+    renderScheduleList(di);
+    nitaLocalEditSchedule(item,di,true);
+  };
+
+  $("addBackupBtn").onclick=async()=>{
+    if(t.supabase){await cloudCreateBackupPlan(di);return}
+    const item={label:"",place:"",desc:"",links:[],photos:[]};
+    d.backup.push(item);
+    persistTrips();
+    nitaPendingFocus=nitaItemId(item,"backup");
+    renderBackup(di);
+    nitaLocalEditBackup(item,di,true);
+  };
+
+  $("shoppingInput").onchange=e=>addGalleryPhotos(d.shopping,[...e.target.files],rerenderShopping);
+  $("foodInput").onchange=e=>addGalleryPhotos(d.pocketFood,[...e.target.files],rerenderFood);
+
+  $("scheduleToggle").onclick=e=>{
+    if(e.target.closest("input,label"))return;
+    const key=`scheduleSection:${t.id}:${di}`;
+    const nv=!nitaSectionCollapsed(key,false);
+    nitaSetSectionCollapsed(key,nv);
+    renderSchedulePage();
+  };
+
+  $("backupToggle").onclick=e=>{
+    if(e.target.closest("input,label"))return;
+    const key=`backupSection:${t.id}:${di}`;
+    const nv=!nitaSectionCollapsed(key,false);
+    nitaSetSectionCollapsed(key,nv);
+    renderSchedulePage();
+  };
+
+  $("shoppingToggle").onclick=e=>{
+    if(e.target.closest("input,label"))return;
+    const key=nitaGallerySectionKey("shopping",t.id,di);
+    const nv=!nitaSectionCollapsed(key,false);
+    nitaSetSectionCollapsed(key,nv);
+    renderSchedulePage();
+  };
+
+  $("foodToggle").onclick=e=>{
+    if(e.target.closest("input,label"))return;
+    const key=nitaGallerySectionKey("food",t.id,di);
+    const nv=!nitaSectionCollapsed(key,false);
+    nitaSetSectionCollapsed(key,nv);
+    renderSchedulePage();
+  };
+
+  if($("dayLocateBtn"))$("dayLocateBtn").onclick=startLiveLocation;
+}
+
+/* ---------- preparation: no categories, clean row cards ---------- */
+function nitaAllPreparationItems(){
+  const all=[];for(const arr of Object.values(state.planning||{}))if(Array.isArray(arr))all.push(...arr);return all
+}
+function nitaNormalizePreparation(){
+  const all=nitaAllPreparationItems();state.planning={todo:all,packing:[],shopping:[],members:[]};return state.planning.todo
+}
+
+function nitaBindReliableDeleteButton(btn,handler){
+  if(!btn||btn.dataset.nitaDeleteBound==="1")return;
+  btn.dataset.nitaDeleteBound="1";
+  let lastRun=0;
+
+  const run=e=>{
+    if(e){
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    const now=Date.now();
+    if(now-lastRun<650)return;
+    lastRun=now;
+    Promise.resolve(handler()).catch(err=>{
+      console.error("delete action failed",err);
+      toast("刪除失敗："+(err?.message||String(err)));
+    });
+  };
+
+  btn.addEventListener("pointerup",run,{passive:false});
+  btn.addEventListener("click",run,false);
+}
+
+function nitaEditPreparation(item,isNew=false){
+  const photos=[...(item.images||[])];
+  openForm(isNew?"新增準備項目":"修改準備項目",`<div class="cleanEditForm">
+    <div class="field"><span class="label">清單內容</span><input class="input oneLineTitle" id="prepText" value="${escapeAttr(item.text||"")}" placeholder="例如：護照"></div>
+    <div class="field"><span class="label">網址</span><input class="input" id="prepUrl" value="${escapeAttr(item.url||"")}" placeholder="https://"></div>
+    ${nitaModalImagesHtml("prepPhotos")}
+  </div>`,()=>{
+    item.text=$("prepText").value.trim();item.url=normalizeUrl($("prepUrl").value)||"";item.images=photos;
+    if(!item.text){toast("請輸入清單內容");return false}
+    save("travelPlanningV13",state.planning);renderPlanning();return true
+  });
+  const redraw=()=>renderPhotoThumbs(photos,$("prepPhotos"),i=>{photos.splice(i,1);redraw()});redraw();
+  document.querySelector('[data-modal-photo-input="prepPhotos"]').onchange=async e=>{for(const f of [...e.target.files]){const im=await compressImage(f,1000,.8);if(im)photos.push(im)}e.target.value="";redraw()};
+}
+
+async function nitaDeletePreparationItem(item,idx,arr){
+  if(!item)return;
+
+  if(currentTrip()?.supabase && item._cloudId){
+    const {data,error}=await supabaseClient
+      .from("preparation_items")
+      .delete()
+      .eq("id",item._cloudId)
+      .select("id");
+
+    if(error){
+      toast("準備項目刪除失敗："+error.message);
+      return;
+    }
+
+    if(!Array.isArray(data)||data.length===0){
+      toast("這筆準備項目目前沒有刪除權限");
+      return;
+    }
+
+    fullCloudLoadedIds.preparation.delete(item._cloudId);
+  }
+
+  const realIndex=arr.indexOf(item);
+  if(realIndex>=0)arr.splice(realIndex,1);
+  else if(Number.isInteger(idx)&&idx>=0&&idx<arr.length)arr.splice(idx,1);
+
+  state.planning.todo=arr;
+  __fcOriginalSave("travelPlanningV13",state.planning);
+  renderPlanning();
+  toast("已刪除準備項目");
+}
+
+function renderPlanning(){
+  const page=$("planningPage"),arr=nitaNormalizePreparation();
+
+  page.innerHTML=`
+    <div class="section">準備清單</div>
+    <div class="prepareToolbar"><button class="primary" id="addPlanningBtn" type="button">＋ 新增</button></div>
+    <div class="prepareList" id="planningAllList"></div>
+  `;
+
+  const list=$("planningAllList");
+  if(!arr.length)list.innerHTML='<div class="card mini">尚未新增準備項目。</div>';
+
+  arr.forEach((item,idx)=>{
+    item.images=item.images||[];
+    item.url=item.url||item.assignee||"";
+
+    const r=document.createElement("div");
+    r.className="prepareItem";
+    r.innerHTML=`
+      <input class="prepareCheck" type="checkbox"${item.selected?" checked":""}>
+      <div>
+        <div class="prepareText${item.selected?" done":""}">${escapeHtml(item.text||"")}</div>
+        ${item.url?`<a href="#" class="mini" data-prep-url="${escapeAttr(item.url)}">${escapeHtml(nitaPrettyUrl(item.url))}</a>`:""}
+      </div>
+      <div class="prepareActions">
+        <button class="iconAction" data-act="edit" type="button" aria-label="修改">✎</button>
+        <button class="iconAction" data-act="delete" type="button" aria-label="刪除">×</button>
+      </div>
+    `;
+
+    r.querySelector(".prepareCheck").onchange=e=>{
+      item.selected=e.target.checked;
+      save("travelPlanningV13",state.planning);
+      renderPlanning();
+    };
+
+    r.querySelector('[data-act="edit"]').onclick=()=>nitaEditPreparation(item,false);
+
+    nitaBindReliableDeleteButton(
+      r.querySelector('[data-act="delete"]'),
+      ()=>nitaDeletePreparationItem(item,idx,arr)
+    );
+
+    const a=r.querySelector("[data-prep-url]");
+    if(a)a.onclick=e=>{
+      e.preventDefault();
+      openDirectUrl(a.dataset.prepUrl);
+    };
+
+    list.appendChild(r);
+  });
+
+  $("addPlanningBtn").onclick=()=>{
+    const item={text:"",url:"",images:[],selected:false};
+    arr.push(item);
+    state.planning.todo=arr;
+    save("travelPlanningV13",state.planning);
+    nitaEditPreparation(item,true);
+  };
+}
+
+/* ---------- collection clean cards ---------- */
+function nitaEditCollection(item,isNew=false){
+  const photos=[...(item.images||[])];
+  openForm(isNew?"新增收藏":"修改收藏",`<div class="cleanEditForm">
+    <div class="field"><span class="label">收藏名稱</span><input class="input oneLineTitle" id="colTitle" value="${escapeAttr(item.title||item.type||"")}" placeholder="例如：Roots 休閒服飾"></div>
+    <div class="field"><span class="label">備註</span><textarea class="input" id="colNote" rows="3">${escapeHtml(item.note||"")}</textarea></div>
+    <div class="field"><span class="label">網址</span><input class="input" id="colUrl" value="${escapeAttr(item.url||"")}" placeholder="https://"></div>
+    ${nitaModalImagesHtml("colPhotos")}
+  </div>`,()=>{
+    item.title=$("colTitle").value.trim();item.type=item.title||"收藏";item.note=$("colNote").value;item.url=normalizeUrl($("colUrl").value)||"";item.images=photos;
+    if(!item.title){toast("請輸入收藏名稱");return false}
+    save("travelJournalV13",state.journal);renderJournal();return true
+  });
+  const redraw=()=>renderPhotoThumbs(photos,$("colPhotos"),i=>{photos.splice(i,1);redraw()});redraw();
+  document.querySelector('[data-modal-photo-input="colPhotos"]').onchange=async e=>{for(const f of [...e.target.files]){const im=await compressImage(f,1200,.82);if(im)photos.push(im)}e.target.value="";redraw()};
+}
+
+async function nitaDeleteCollectionItem(item){
+  if(!item)return;
+
+  if(currentTrip()?.supabase && item._cloudId){
+    const {data,error}=await supabaseClient
+      .from("collections")
+      .delete()
+      .eq("id",item._cloudId)
+      .select("id");
+
+    if(error){
+      toast("收藏刪除失敗："+error.message);
+      return;
+    }
+
+    if(!Array.isArray(data)||data.length===0){
+      toast("這筆收藏目前沒有刪除權限");
+      return;
+    }
+
+    fullCloudLoadedIds.collections.delete(item._cloudId);
+  }
+
+  const realIndex=state.journal.indexOf(item);
+  if(realIndex>=0)state.journal.splice(realIndex,1);
+
+  __fcOriginalSave("travelJournalV13",state.journal);
+  renderJournal();
+  toast("已刪除收藏");
+}
+function renderJournal(){
+  const page=$("journalPage");
+  page.innerHTML=`<div class="section">收藏清單</div><div class="collectionToolbar"><button class="primary" id="addJournalBtn" type="button">＋ 新增收藏</button></div><div class="collectionGrid" id="journalList"></div>`;
+
+  const box=$("journalList");
+
+  if(!state.journal.length){
+    box.innerHTML='<div class="card mini" style="grid-column:1/-1">尚未加入收藏。</div>';
+  }
+
+  state.journal.forEach((j)=>{
+    j.images=j.images||[];
+    j.title=j.title||j.type||"收藏";
+
+    const c=document.createElement("div");
+    c.className="collectionCard";
+    c.innerHTML=`
+      ${j.images[0]?`
+        <div class="collectionPhotoHero" data-hero>
+          <img src="${escapeAttr(j.images[0])}" alt="">
+          <span class="collectionPhotoCount">${j.images.length} 張</span>
+        </div>`:""}
+      <div class="collectionCardBody">
+        <div class="collectionTitle">${escapeHtml(j.title)}</div>
+        ${j.note?`<div class="collectionNote">${escapeHtml(j.note)}</div>`:""}
+        ${j.url?`<a class="cleanLink" href="#" data-col-url="${escapeAttr(j.url)}">🔗 ${escapeHtml(nitaPrettyUrl(j.url))}</a>`:""}
+        <div class="collectionActions">
+          <button class="iconAction" data-act="edit" type="button" aria-label="修改">✎</button>
+          <button class="iconAction" data-act="delete" type="button" aria-label="刪除">⌫</button>
+        </div>
+      </div>`;
+
+    const hero=c.querySelector("[data-hero]");
+    if(hero)hero.onclick=()=>openViewer(j.images,0);
+
+    const a=c.querySelector("[data-col-url]");
+    if(a)a.onclick=e=>{
+      e.preventDefault();
+      openDirectUrl(a.dataset.colUrl);
+    };
+
+    c.querySelector('[data-act="edit"]').onclick=()=>nitaEditCollection(j,false);
+
+    nitaBindReliableDeleteButton(
+      c.querySelector('[data-act="delete"]'),
+      ()=>nitaDeleteCollectionItem(j)
+    );
+
+    box.appendChild(c);
+  });
+
+  $("addJournalBtn").onclick=()=>{
+    const item={title:"",type:"收藏",note:"",url:"",images:[]};
+    state.journal.push(item);
+    save("travelJournalV13",state.journal);
+    nitaEditCollection(item,true);
+  };
+}
+
+/* ---------- viewer swipe / count ---------- */
+function nitaUpdateViewer(){
+  if(!viewerImages.length)return;
+  $("viewerImg").src=viewerImages[viewerIndex];
+  const c=$("viewerCounter");if(c)c.textContent=`${viewerIndex+1} / ${viewerImages.length}`;
+}
+function openViewer(images,index){if(!images.length)return;viewerImages=images.filter(Boolean);viewerIndex=Math.max(0,Math.min(index,viewerImages.length-1));nitaUpdateViewer();$("viewerOverlay").classList.add("show")}
+let nitaViewerTouchX=null;
+$("viewerImg").addEventListener("touchstart",e=>{nitaViewerTouchX=e.touches?.[0]?.clientX??null},{passive:true});
+$("viewerImg").addEventListener("touchend",e=>{if(nitaViewerTouchX==null)return;const x=e.changedTouches?.[0]?.clientX??nitaViewerTouchX,dx=x-nitaViewerTouchX;nitaViewerTouchX=null;if(Math.abs(dx)<35)return;viewerIndex=(viewerIndex+(dx<0?1:-1)+viewerImages.length)%viewerImages.length;nitaUpdateViewer()},{passive:true});
+
+/* ---------- top header collapse: only header, keep date tabs ---------- */
+function setGlobalHeaderCollapsed(collapsed){
+  const app=$("appRoot"),btn=$("globalHeaderToggle");
+  nitaUiState.headerCollapsed=!!collapsed;nitaSaveUi();
+  app.classList.toggle("headerCollapsed",!!collapsed);
+  app.classList.add("showGlobalHeaderToggle");
+  btn.textContent=collapsed?"⌄":"⌃";
+  btn.setAttribute("aria-label",collapsed?"展開上方行程資訊":"收合上方行程資訊");
+}
+
+$("viewerClose").onclick=()=>$("viewerOverlay").classList.remove("show");$("viewerPrev").onclick=()=>{viewerIndex=(viewerIndex-1+viewerImages.length)%viewerImages.length;nitaUpdateViewer()};$("viewerNext").onclick=()=>{viewerIndex=(viewerIndex+1)%viewerImages.length;nitaUpdateViewer()};
 async function compressImage(file,maxDim=1200,quality=.82){if(!file.type.startsWith("image/"))return "";const data=await fileToDataURL(file),img=await loadImage(data),scale=Math.min(1,maxDim/Math.max(img.width,img.height)),c=document.createElement("canvas");c.width=Math.round(img.width*scale);c.height=Math.round(img.height*scale);c.getContext("2d").drawImage(img,0,0,c.width,c.height);return c.toDataURL("image/jpeg",quality)}function fileToDataURL(file){return new Promise((r,j)=>{const f=new FileReader();f.onload=()=>r(f.result);f.onerror=j;f.readAsDataURL(file)})}function loadImage(src){return new Promise((r,j)=>{const i=new Image();i.onload=()=>r(i);i.onerror=j;i.src=src})}
 
 
@@ -2404,6 +4699,33 @@ function syncGlobalHeaderToggle(pageId){
   if(!enable)setGlobalHeaderCollapsed(false);
 }
 $("globalHeaderToggle").onclick=()=>setGlobalHeaderCollapsed(!$("appRoot").classList.contains("headerCollapsed"));
+setGlobalHeaderCollapsed(!!nitaUiState.headerCollapsed);
+
+
+/* ===== FINAL header collapse override ===== */
+function setGlobalHeaderCollapsed(collapsed){
+  const app=$("appRoot"),btn=$("globalHeaderToggle");
+  const value=!!collapsed;
+  nitaUiState.headerCollapsed=value;
+  nitaSaveUi();
+  app.classList.toggle("headerCollapsed",value);
+  app.classList.add("showGlobalHeaderToggle");
+  if(btn){
+    btn.style.display="flex";
+    btn.textContent=value?"⌄":"⌃";
+    btn.setAttribute("aria-label",value?"展開上方行程資訊":"收合上方行程資訊");
+  }
+  const active=document.querySelector(".page.active");
+  if(active?.id==="mapPage"&&window.google?.maps){
+    setTimeout(()=>initGoogleMap(true),120);
+  }
+}
+function syncGlobalHeaderToggle(pageId){
+  const app=$("appRoot");
+  app.classList.add("showGlobalHeaderToggle");
+  const btn=$("globalHeaderToggle");
+  if(btn)btn.style.display="flex";
+}
 
 $("bannerInput").onchange=async e=>{
   const f=e.target.files&&e.target.files[0];
@@ -2423,10 +4745,17 @@ document.querySelectorAll(".navBtn").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".navBtn").forEach(x=>x.classList.remove("active"));
   b.classList.add("active");
   document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
-  $(b.dataset.page).classList.add("active");
-  syncGlobalHeaderToggle(b.dataset.page);
-  if(b.dataset.page==="mapPage") setTimeout(()=>initGoogleMap(true),120);
-  if(b.dataset.page==="accountPage") refreshAccountUI();
+  const pageId=b.dataset.page;
+  $(pageId).classList.add("active");
+  syncGlobalHeaderToggle(pageId);
+
+  if(pageId==="schedulePage")renderSchedulePage();
+  if(pageId==="bookingsPage")renderBookings();
+  if(pageId==="mapPage"){renderMapPage();setTimeout(()=>initGoogleMap(true),120)}
+  if(pageId==="expensePage")renderExpenses();
+  if(pageId==="journalPage")renderJournal();
+  if(pageId==="planningPage")renderPlanning();
+  if(pageId==="accountPage")refreshAccountUI();
 });
 (function init(){
   const banner=localStorage.getItem("travelBannerV23");
@@ -2435,7 +4764,7 @@ document.querySelectorAll(".navBtn").forEach(b=>b.onclick=()=>{
   const brand=localStorage.getItem("travelBrandV23")||localStorage.getItem("travelBrandV13");
   if(brand)$("brandTitle").textContent=brand;
   if(!state.trips[state.currentTripId])state.currentTripId=Object.keys(state.trips)[0];
-  installLoggedOutWriteGuard();setupSupabaseStageOne();
+  nitaRestoreHomeIcon();installLoggedOutWriteGuard();setupSupabaseStageOne();if(!supabaseSessionUser)clearSensitiveAccountUI();
   if($("refreshMembersBtn"))$("refreshMembersBtn").onclick=loadAdminMembers;
   if($("addFamilyMemberBtn"))$("addFamilyMemberBtn").onclick=openAddFamilyMember;
   if($("registerMemberBtn"))$("registerMemberBtn").onclick=openRegisterMember;
@@ -2453,6 +4782,6 @@ document.querySelectorAll(".navBtn").forEach(b=>b.onclick=()=>{
 })();
 </script>
 
-<script>console.info("Nita Travel STABLE Simple Membership + Day Hotel + Avatar");</script>
+<script>console.info("Nita Travel FINAL v9 Photo Sync Delete + QR Labels");</script>
 </body>
 </html>
