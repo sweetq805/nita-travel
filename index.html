@@ -252,10 +252,156 @@ input,textarea,select{outline:none}
 /* v23.1：登出狀態只讀，所有新增/修改/刪除/上傳控制停用 */
 .authWriteLocked{opacity:.48!important;cursor:not-allowed!important}
 body.loggedOutMode input:disabled,body.loggedOutMode textarea:disabled,body.loggedOutMode select:disabled{opacity:.62;-webkit-text-fill-color:inherit}
+
+/* ===== 旅行 v03：成員管理 + 行程排序 + 帳號大按鈕 ===== */
+
+/* 帳號頁登入 / 登出：放大，使用網站既有莫蘭迪粉 */
+#accountPage .supabaseActions{
+  display:grid!important;
+  grid-template-columns:1fr!important;
+  gap:10px!important;
+  width:100%!important;
+}
+#supabaseLoginBtn,#supabaseLogoutBtn{
+  display:block;
+  width:100%!important;
+  min-height:58px!important;
+  margin:10px 0 0!important;
+  padding:14px 18px!important;
+  border:0!important;
+  border-radius:18px!important;
+  background:var(--active)!important;
+  color:#fff!important;
+  font-size:16px!important;
+  font-weight:700!important;
+  box-shadow:0 5px 0 var(--activeDeep)!important;
+}
+#supabaseLoginBtn:active,#supabaseLogoutBtn:active{
+  transform:translateY(2px)!important;
+  box-shadow:0 3px 0 var(--activeDeep)!important;
+}
+
+/* 行程排序 / 收合：只有圖示，沒有底框、背景、外框 */
+.orderBtns{display:flex;flex-direction:column;align-items:center;gap:0;flex:0 0 28px}
+.orderBtn,.scheduleCard .collapseBtn{
+  width:28px!important;
+  height:27px!important;
+  min-width:28px!important;
+  padding:0!important;
+  margin:0!important;
+  border:0!important;
+  border-radius:0!important;
+  outline:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:#8B817A!important;
+  display:grid!important;
+  place-items:center!important;
+  font-size:18px!important;
+  line-height:1!important;
+  touch-action:manipulation;
+}
+.orderBtn:active,.scheduleCard .collapseBtn:active{transform:scale(.88)}
+.orderBtn:disabled{opacity:.22!important;cursor:default!important}
+.scheduleCard .rowActions{gap:4px!important}
+.scheduleCard .collapseBtn.open{transform:rotate(180deg)}
+.scheduleCard .collapseBtn.open:active{transform:rotate(180deg) scale(.88)}
+
+/* 成員管理 */
+.adminMembers{
+  margin-top:14px!important;
+  padding:15px 14px 10px!important;
+  background:var(--card)!important;
+  border:1px solid #EEE4DD!important;
+  border-radius:22px!important;
+  box-shadow:var(--shadow)!important;
+}
+.adminMembersHead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px!important}
+.adminMembersHead strong{font-size:18px!important;font-weight:750!important}
+.memberAdminToolbar{display:flex;align-items:center;gap:6px}
+.memberAdminAdd{
+  padding:8px 10px!important;
+  margin:0!important;
+  border-radius:12px!important;
+  background:var(--active)!important;
+  color:#fff!important;
+  box-shadow:0 3px 0 var(--activeDeep)!important;
+  font-size:10px!important;
+}
+#refreshMembersBtn{
+  padding:7px 8px!important;margin:0!important;background:transparent!important;
+  border:0!important;box-shadow:none!important;color:var(--muted)!important;font-size:10px!important
+}
+.memberList{display:grid!important;gap:0!important;margin-top:8px!important}
+.memberRow{
+  display:grid!important;
+  grid-template-columns:58px minmax(0,1fr) 36px!important;
+  gap:10px!important;
+  align-items:center!important;
+  min-height:84px!important;
+  padding:12px 0!important;
+  border:0!important;
+  border-bottom:1px solid #EEE4DF!important;
+  border-radius:0!important;
+  background:transparent!important;
+}
+.memberRow:last-child{border-bottom:0!important}
+.memberAvatar{
+  position:relative;width:56px;height:56px;padding:0;border:2px solid #EFE4DF;border-radius:50%;
+  overflow:hidden;background:#EEE7E1;display:grid;place-items:center;cursor:pointer
+}
+.memberAvatar img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.memberAvatarFallback{
+  position:absolute;inset:0;display:grid;place-items:center;padding:5px;text-align:center;
+  color:#675F59;font-size:11px!important;line-height:1.05!important;font-weight:500!important;
+  white-space:normal!important;word-break:break-word;overflow:hidden
+}
+.memberAvatar.hasPhoto .memberAvatarFallback{display:none}
+.memberInfo{min-width:0}
+.memberName{font-size:14px!important;font-weight:700!important;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.memberEmail{font-size:10px;color:var(--muted);margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.memberBadges{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:6px}
+.rolePill,.memberStatusPill{
+  display:inline-flex!important;align-items:center;justify-content:center;min-height:23px;
+  padding:4px 8px!important;border-radius:999px!important;font-size:9px!important;font-weight:800!important
+}
+.memberStatusPill{background:#DCE8DE;color:#526256}
+.memberStatusPill.off{background:#EEEAE6;color:#8F8780}
+.memberChevron{
+  width:36px;height:42px;padding:0;border:0;background:transparent;box-shadow:none;
+  color:#756D67;font-size:28px;line-height:1;display:grid;place-items:center;cursor:pointer
+}
+.memberChevron:active{transform:scale(.88)}
+.memberHelp{font-size:9px;color:var(--muted);line-height:1.5;margin:4px 0 0}
+
+/* 成員設定視窗 */
+.memberTripPermissionList{display:grid;gap:0;margin-top:6px;border-top:1px solid #E8DDD6}
+.memberTripPermissionRow{
+  display:grid;grid-template-columns:minmax(0,1fr) 112px;gap:8px;align-items:center;
+  padding:9px 0;border-bottom:1px solid #E8DDD6
+}
+.memberTripName{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.memberModalSave{
+  width:100%;margin-top:13px;padding:12px;border-radius:15px;background:var(--active);
+  color:#fff;box-shadow:0 4px 0 var(--activeDeep);font-weight:700
+}
+.memberModalDanger{
+  width:100%;margin-top:10px;padding:11px;border-radius:14px;background:#F3DEDC;color:#8B6663
+}
+#memberAvatarInput{display:none}
+
+@media(max-width:360px){
+  .memberRow{grid-template-columns:52px minmax(0,1fr) 32px!important;gap:8px!important}
+  .memberAvatar{width:50px;height:50px}
+  .memberName{font-size:13px!important}
+  .memberEmail{font-size:9px}
+  .memberChevron{width:32px}
+}
+
 </style>
 </head>
 <body>
-<!-- Nita Travel v23.1 Production Clean + Auth Locked -->
+<!-- Nita Travel 旅行v03：旅行v02母版 + 成員管理 + 行程排序 + 帳號大按鈕 -->
 <div class="app" id="appRoot">
 <button class="globalHeaderToggle" id="globalHeaderToggle" type="button" aria-label="收合上方行程資訊" title="收合 / 展開上方行程資訊">⌃</button>
 <header class="header">
@@ -325,8 +471,14 @@ body.loggedOutMode input:disabled,body.loggedOutMode textarea:disabled,body.logg
       <button id="saveSupabaseConfigBtn" type="button" hidden></button><button id="clearSupabaseConfigBtn" type="button" hidden></button><button id="refreshCloudTripsBtn" type="button" hidden></button>
     </div></div>
     <div class="card adminMembers" id="adminMembers" hidden>
-      <div class="adminMembersHead"><strong>會員管理</strong><button class="smallBtn" id="refreshMembersBtn" type="button">重新整理</button></div>
-      <div class="mini">僅 ADMIN 可查看家庭會員、帳號角色與旅行權限。</div>
+      <div class="adminMembersHead">
+        <strong>成員管理</strong>
+        <div class="memberAdminToolbar">
+          <button class="smallBtn" id="refreshMembersBtn" type="button">重新整理</button>
+          <button class="memberAdminAdd" id="addFamilyMemberBtn" type="button">＋ 新增家庭成員</button>
+        </div>
+      </div>
+      <div class="memberHelp">點擊圓形頭像可直接從手機相簿更換照片；點右側 › 可設定角色、狀態與每趟旅行權限。</div>
       <div id="memberList" class="memberList"></div>
     </div>
   </section>
@@ -347,6 +499,36 @@ body.loggedOutMode input:disabled,body.loggedOutMode textarea:disabled,body.logg
 <div class="overlay" id="formOverlay"><div class="modal"><div class="modalTitle" id="formTitle"></div><div id="formBody"></div><div class="modalActions"><button class="cancel" id="formCancel">取消</button><button class="confirm" id="formConfirm">確認新增</button></div></div></div>
 
 <div class="overlay" id="viewerOverlay"><div class="viewer"><img class="viewerImg" id="viewerImg" alt=""><button class="viewerBtn viewerClose" id="viewerClose">×</button><button class="viewerBtn viewerPrev" id="viewerPrev">‹</button><button class="viewerBtn viewerNext" id="viewerNext">›</button></div></div>
+
+<input id="memberAvatarInput" type="file" accept="image/*">
+
+<div class="overlay" id="memberSettingsOverlay">
+  <div class="modal">
+    <div class="modalTitle">成員設定</div>
+    <div class="field"><span class="label">姓名</span><input class="input" id="memberEditName" type="text"></div>
+    <div class="field"><span class="label">角色</span><select class="input softSelect" id="memberEditRole"><option value="member">MEMBER</option><option value="admin">ADMIN</option></select></div>
+    <div class="field"><span class="label">帳號狀態</span><select class="input softSelect" id="memberEditStatus"><option value="active">使用中</option><option value="disabled">停用</option></select></div>
+    <div class="field">
+      <span class="label">各旅程權限</span>
+      <div class="memberTripPermissionList" id="memberTripPermissionList"></div>
+    </div>
+    <button class="memberModalSave" id="saveMemberSettingsBtn" type="button">儲存修改</button>
+    <button class="memberModalDanger" id="removeFamilyMemberBtn" type="button">移除家庭成員</button>
+    <div class="modalActions"><button class="cancel" id="closeMemberSettingsBtn" type="button">關閉</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="addFamilyMemberOverlay">
+  <div class="modal">
+    <div class="modalTitle">新增家庭成員</div>
+    <div class="field"><span class="label">姓名</span><input class="input" id="newMemberName" type="text" autocomplete="name"></div>
+    <div class="field"><span class="label">Email</span><input class="input" id="newMemberEmail" type="email" autocomplete="email"></div>
+    <div class="field"><span class="label">密碼</span><input class="input" id="newMemberPassword" type="password" autocomplete="new-password"></div>
+    <button class="memberModalSave" id="createFamilyMemberBtn" type="button">建立家庭帳號</button>
+    <div class="modalActions"><button class="cancel" id="closeAddFamilyMemberBtn" type="button">關閉</button></div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -480,6 +662,7 @@ async function refreshSupabaseAccountAndTrips(){
   refreshAccountUI();
   setSupabaseStatus(`登入成功\n${profile.display_name?"名稱："+profile.display_name+"\n":""}帳號：${supabaseSessionUser.email||""}\nRole：${profile.role}\nStatus：${profile.account_status}\n可查看雲端旅程：${supabaseCloudTrips.length} 趟`,profile.account_status==="active"?"ok":"bad");
   renderCloudTrips();
+  if(isSupabaseAdmin())void loadAdminMembers();
   try{await syncCloudTripsIntoApp()}catch(e){setSupabaseStatus("帳號已登入，但同步 trip_days 失敗："+e.message,"bad")}
 }
 function setupSupabaseStageOne(){
@@ -662,14 +845,22 @@ function cloudCreatorLabel(row){
   if(supabaseSessionUser && row.created_by===supabaseSessionUser.id)return "我建立的";
   return "其他成員建立";
 }
+let cloudItinerarySortSupported=null;
+async function cloudItineraryHasSortOrder(){
+  if(cloudItinerarySortSupported!==null)return cloudItinerarySortSupported;
+  const {error}=await supabaseClient.from("itinerary_items").select("sort_order").limit(1);
+  cloudItinerarySortSupported=!error;
+  return cloudItinerarySortSupported;
+}
 async function cloudLoadItineraryRows(di){
   const t=currentTrip(),day=t?.days?.[di];
   if(!t?.supabase||!day?.supabaseDayId)return [];
-  const {data,error}=await supabaseClient.from("itinerary_items")
-    .select("id,trip_id,trip_day_id,time_text,item_type,place_name,description,created_by,created_at")
-    .eq("trip_day_id",day.supabaseDayId)
-    .order("time_text",{ascending:true})
-    .order("created_at",{ascending:true});
+  const hasSort=await cloudItineraryHasSortOrder();
+  const cols="id,trip_id,trip_day_id,time_text,item_type,place_name,description,created_by,created_at"+(hasSort?",sort_order":"");
+  let q=supabaseClient.from("itinerary_items").select(cols).eq("trip_day_id",day.supabaseDayId);
+  if(hasSort)q=q.order("sort_order",{ascending:true,nullsFirst:false}).order("created_at",{ascending:true});
+  else q=q.order("created_at",{ascending:true});
+  const {data,error}=await q;
   if(error)throw error;
   return data||[];
 }
@@ -682,22 +873,35 @@ async function cloudUpdateItinerary(row,patch,di){
 }
 async function cloudCreateItinerary(di){
   const t=currentTrip(),day=t?.days?.[di];
-  if(!t?.supabase){return}
+  if(!t?.supabase)return;
   if(!supabaseSessionUser||!supabaseClient){toast("請先登入");return}
   if(!cloudCanEditTrip(t.id)){toast("VIEWER 只能查看，不能新增每日行程");return}
   if(!day?.supabaseDayId){toast("找不到這一天的 trip_day_id，請重新讀取雲端旅程");return}
-  const {error}=await supabaseClient.from("itinerary_items").insert({
-    trip_id:t.id,
-    trip_day_id:day.supabaseDayId,
-    time_text:"09:00",
-    item_type:"早餐",
-    place_name:"店名",
-    description:""
-  });
+  const payload={trip_id:t.id,trip_day_id:day.supabaseDayId,time_text:"09:00",item_type:"早餐",place_name:"店名",description:""};
+  if(await cloudItineraryHasSortOrder()){
+    const rows=await cloudLoadItineraryRows(di);
+    const max=Math.max(0,...rows.map(r=>Number(r.sort_order)||0));
+    payload.sort_order=max+1;
+  }
+  const {error}=await supabaseClient.from("itinerary_items").insert(payload);
   if(error){toast("新增失敗："+error.message);return}
   await renderCloudScheduleList(di);
-  toast("已新增雲端每日行程");
+  toast("已新增到行程最後一筆");
 }
+
+async function cloudMoveItinerary(rows,idx,dir,di){
+  const target=idx+dir;
+  if(target<0||target>=rows.length)return;
+  if(!(await cloudItineraryHasSortOrder())){toast("請先執行 v03 Supabase SQL，才能永久調整雲端順序");return}
+  const a=rows[idx],b=rows[target];
+  const ao=Number(a.sort_order)||idx+1,bo=Number(b.sort_order)||target+1;
+  const r1=await supabaseClient.from("itinerary_items").update({sort_order:bo}).eq("id",a.id);
+  if(r1.error){toast("排序失敗："+r1.error.message);return}
+  const r2=await supabaseClient.from("itinerary_items").update({sort_order:ao}).eq("id",b.id);
+  if(r2.error){toast("排序失敗："+r2.error.message);return}
+  await renderCloudScheduleList(di);
+}
+
 async function cloudDeleteItinerary(row,di){
   if(!cloudCanDeleteItinerary(row)){toast("你只能刪除自己建立的每日行程");return}
   const {data,error}=await supabaseClient.from("itinerary_items").delete().eq("id",row.id).select("id");
@@ -852,19 +1056,22 @@ async function renderCloudScheduleList(di){
     const assetMap=await cloudLoadItineraryAssets(rows);
     box.innerHTML="";
     const sync=document.createElement("div");sync.className="cloudSyncNote";
-    sync.textContent=canEdit?"每日行程、網址與照片已同步雲端。":"目前為唯讀模式。";
+    sync.textContent=canEdit?"每日行程、網址、照片與排序已同步雲端。":"目前為唯讀模式。";
     box.appendChild(sync);
     if(!rows.length){const empty=document.createElement("div");empty.className="card mini";empty.textContent=canEdit?"目前沒有每日行程，按下「＋ 新增行程」。":"目前沒有每日行程。";box.appendChild(empty);return}
-    rows.forEach(row=>{
+    rows.forEach((row,idx)=>{
       const assets=assetMap[row.id]||{links:[],photos:[]};
       const c=document.createElement("div");c.className="scheduleCard";
       const canDelete=cloudCanDeleteItinerary(row);
       const disabled=canEdit?"":" disabled";
-      c.innerHTML=`<div class="scheduleTop"><div class="inlineGroup"><input data-col="time_text" value="${escapeAttr(row.time_text||"")}" placeholder="09:00"${disabled}><input data-col="item_type" value="${escapeAttr(row.item_type||"")}" placeholder="早餐"${disabled}><input data-col="place_name" value="${escapeAttr(row.place_name||"")}" placeholder="店名"${disabled}></div><div class="rowActions">${canDelete?'<button class="deleteBtn" data-act="cloudDelete" type="button">刪除</button>':''}<button class="collapseBtn open" data-act="collapse" type="button">⌄</button></div></div><div class="scheduleBody"><textarea class="input" data-col="description" rows="2" placeholder="介紹 / 備註"${disabled}>${escapeHtml(row.description||"")}</textarea><div class="cloudScheduleMeta"><span class="cloudOwnerPill">${escapeHtml(cloudCreatorLabel(row))}</span><span>雲端資料</span></div><div class="cloudAssetSection"><div class="cloudAssetHead"><span class="cloudAssetTitle">網址</span>${canEdit?'<button class="smallBtn" data-act="addCloudLink" type="button">＋ 新增網址</button>':''}</div><div class="cloudLinkList" data-role="cloudLinks"></div></div><div class="cloudAssetSection"><div class="cloudAssetHead"><span class="cloudAssetTitle">照片</span>${canEdit?'<label class="cloudUploadLabel" data-role="uploadLabel">＋ 從手機相簿插入照片<input data-role="cloudPhotoInput" type="file" multiple accept="image/*" hidden></label>':''}</div><div class="photo3 cloudPhotoGrid" data-role="cloudPhotos"></div><div class="cloudPhotoStatus">Private Storage · 以 signed URL 顯示</div></div></div>`;
+      const orderHtml=canEdit?`<div class="orderBtns"><button class="orderBtn" data-act="up" type="button" aria-label="往上移"${idx===0?" disabled":""}>↑</button><button class="orderBtn" data-act="down" type="button" aria-label="往下移"${idx===rows.length-1?" disabled":""}>↓</button></div>`:"";
+      c.innerHTML=`<div class="scheduleTop"><div class="inlineGroup"><input data-col="time_text" value="${escapeAttr(row.time_text||"")}" placeholder="09:00"${disabled}><input data-col="item_type" value="${escapeAttr(row.item_type||"")}" placeholder="早餐"${disabled}><input data-col="place_name" value="${escapeAttr(row.place_name||"")}" placeholder="店名"${disabled}></div><div class="rowActions">${orderHtml}${canDelete?'<button class="deleteBtn" data-act="cloudDelete" type="button">刪除</button>':''}<button class="collapseBtn open" data-act="collapse" type="button">⌄</button></div></div><div class="scheduleBody"><textarea class="input" data-col="description" rows="2" placeholder="介紹 / 備註"${disabled}>${escapeHtml(row.description||"")}</textarea><div class="cloudScheduleMeta"><span class="cloudOwnerPill">${escapeHtml(cloudCreatorLabel(row))}</span><span>雲端資料</span></div><div class="cloudAssetSection"><div class="cloudAssetHead"><span class="cloudAssetTitle">網址</span>${canEdit?'<button class="smallBtn" data-act="addCloudLink" type="button">＋ 新增網址</button>':''}</div><div class="cloudLinkList" data-role="cloudLinks"></div></div><div class="cloudAssetSection"><div class="cloudAssetHead"><span class="cloudAssetTitle">照片</span>${canEdit?'<label class="cloudUploadLabel" data-role="uploadLabel">＋ 從手機相簿插入照片<input data-role="cloudPhotoInput" type="file" multiple accept="image/*" hidden></label>':''}</div><div class="photo3 cloudPhotoGrid" data-role="cloudPhotos"></div><div class="cloudPhotoStatus">Private Storage · 以 signed URL 顯示</div></div></div>`;
       c.querySelectorAll("[data-col]").forEach(el=>{
         if(!canEdit)return;
         el.onchange=async e=>{const col=e.currentTarget.dataset.col,val=e.currentTarget.value;row[col]=val;await cloudUpdateItinerary(row,{[col]:val},di)};
       });
+      const up=c.querySelector('[data-act="up"]');if(up)up.onclick=()=>cloudMoveItinerary(rows,idx,-1,di);
+      const down=c.querySelector('[data-act="down"]');if(down)down.onclick=()=>cloudMoveItinerary(rows,idx,1,di);
       const del=c.querySelector('[data-act="cloudDelete"]');if(del)del.onclick=()=>cloudDeleteItinerary(row,di);
       c.querySelector('[data-act="collapse"]').onclick=e=>{const body=c.querySelector(".scheduleBody");body.classList.toggle("hidden");e.currentTarget.classList.toggle("open",!body.classList.contains("hidden"))};
       const addLink=c.querySelector('[data-act="addCloudLink"]');if(addLink)addLink.onclick=()=>openSimpleTextForm("新增網址","網址","https://",v=>{void cloudAddItineraryLink(row,di,v);return true});
@@ -876,7 +1083,27 @@ async function renderCloudScheduleList(di){
   }catch(err){box.innerHTML=`<div class="card mini" style="color:#8B6663">讀取每日行程／網址／照片失敗：${escapeHtml(err.message||String(err))}</div>`}
 }
 
-function renderScheduleList(di){const tripForSchedule=currentTrip();if(tripForSchedule?.supabase){void renderCloudScheduleList(di);return}const d=currentTrip().days[di],box=$("scheduleList");box.innerHTML="";if(!d.schedule.length)box.innerHTML=`<div class="card mini">目前沒有行程，按下「＋ 新增行程」。</div>`;d.schedule.forEach((item,idx)=>{item.links=item.links||[];item.photos=item.photos||[];const c=document.createElement("div");c.className="scheduleCard";c.innerHTML=`<div class="scheduleTop"><div class="inlineGroup"><input data-k="time" value="${escapeAttr(item.time||"")}" placeholder="09:00"><input data-k="type" value="${escapeAttr(item.type||"")}" placeholder="早餐"><input data-k="place" value="${escapeAttr(item.place||"")}" placeholder="店名"></div><div class="rowActions"><button class="deleteBtn" data-act="delete" type="button">刪除</button><button class="collapseBtn open" data-act="collapse" type="button">⌄</button></div></div><div class="scheduleBody"><textarea class="input" data-k="desc" rows="2" placeholder="介紹 / 備註">${escapeHtml(item.desc||"")}</textarea><div class="linkRow" data-role="links"></div><button class="smallBtn" data-act="addLink" type="button">＋ 新增網址</button><div class="photo3" data-role="photos"></div><label class="smallBtn">＋ 從手機相簿插入照片<input data-role="photoInput" type="file" multiple accept="image/*" hidden></label></div>`;c.querySelectorAll("[data-k]").forEach(el=>el.oninput=e=>{item[e.target.dataset.k]=e.target.value;persistTrips()});c.querySelector('[data-act="delete"]').onclick=()=>{d.schedule.splice(idx,1);persistTrips();renderScheduleList(di);toast("已刪除每日行程")};c.querySelector('[data-act="collapse"]').onclick=e=>{const body=c.querySelector(".scheduleBody");body.classList.toggle("hidden");e.currentTarget.classList.toggle("open",!body.classList.contains("hidden"))};renderLinks(item,c.querySelector('[data-role="links"]'),()=>renderScheduleList(di));c.querySelector('[data-act="addLink"]').onclick=()=>openSimpleTextForm("新增網址","網址","https://",v=>{if(item.links.length>=3){toast("每個行程最多 3 個網址");return}item.links.push(v);persistTrips();renderScheduleList(di)});renderPhotoThumbs(item.photos,c.querySelector('[data-role="photos"]'),i=>{item.photos.splice(i,1);persistTrips();renderScheduleList(di)});c.querySelector('[data-role="photoInput"]').onchange=async e=>{for(const f of [...e.target.files].slice(0,10-item.photos.length))item.photos.push(await compressImage(f,1200,.82));persistTrips();renderScheduleList(di)};box.appendChild(c)})}
+function renderScheduleList(di){
+  const tripForSchedule=currentTrip();
+  if(tripForSchedule?.supabase){void renderCloudScheduleList(di);return}
+  const d=currentTrip().days[di],box=$("scheduleList");box.innerHTML="";
+  if(!d.schedule.length)box.innerHTML=`<div class="card mini">目前沒有行程，按下「＋ 新增行程」。</div>`;
+  d.schedule.forEach((item,idx)=>{
+    item.links=item.links||[];item.photos=item.photos||[];
+    const c=document.createElement("div");c.className="scheduleCard";
+    c.innerHTML=`<div class="scheduleTop"><div class="inlineGroup"><input data-k="time" value="${escapeAttr(item.time||"")}" placeholder="09:00"><input data-k="type" value="${escapeAttr(item.type||"")}" placeholder="早餐"><input data-k="place" value="${escapeAttr(item.place||"")}" placeholder="店名"></div><div class="rowActions"><div class="orderBtns"><button class="orderBtn" data-act="up" type="button" aria-label="往上移"${idx===0?" disabled":""}>↑</button><button class="orderBtn" data-act="down" type="button" aria-label="往下移"${idx===d.schedule.length-1?" disabled":""}>↓</button></div><button class="deleteBtn" data-act="delete" type="button">刪除</button><button class="collapseBtn open" data-act="collapse" type="button">⌄</button></div></div><div class="scheduleBody"><textarea class="input" data-k="desc" rows="2" placeholder="介紹 / 備註">${escapeHtml(item.desc||"")}</textarea><div class="linkRow" data-role="links"></div><button class="smallBtn" data-act="addLink" type="button">＋ 新增網址</button><div class="photo3" data-role="photos"></div><label class="smallBtn">＋ 從手機相簿插入照片<input data-role="photoInput" type="file" multiple accept="image/*" hidden></label></div>`;
+    c.querySelectorAll("[data-k]").forEach(el=>el.oninput=e=>{item[e.target.dataset.k]=e.target.value;persistTrips()});
+    c.querySelector('[data-act="up"]').onclick=()=>{if(idx<=0)return;[d.schedule[idx-1],d.schedule[idx]]=[d.schedule[idx],d.schedule[idx-1]];persistTrips();renderScheduleList(di)};
+    c.querySelector('[data-act="down"]').onclick=()=>{if(idx>=d.schedule.length-1)return;[d.schedule[idx+1],d.schedule[idx]]=[d.schedule[idx],d.schedule[idx+1]];persistTrips();renderScheduleList(di)};
+    c.querySelector('[data-act="delete"]').onclick=()=>{d.schedule.splice(idx,1);persistTrips();renderScheduleList(di);toast("已刪除每日行程")};
+    c.querySelector('[data-act="collapse"]').onclick=e=>{const body=c.querySelector(".scheduleBody");body.classList.toggle("hidden");e.currentTarget.classList.toggle("open",!body.classList.contains("hidden"))};
+    renderLinks(item,c.querySelector('[data-role="links"]'),()=>renderScheduleList(di));
+    c.querySelector('[data-act="addLink"]').onclick=()=>openSimpleTextForm("新增網址","網址","https://",v=>{if(item.links.length>=3){toast("每個行程最多 3 個網址");return}item.links.push(v);persistTrips();renderScheduleList(di)});
+    renderPhotoThumbs(item.photos,c.querySelector('[data-role="photos"]'),i=>{item.photos.splice(i,1);persistTrips();renderScheduleList(di)});
+    c.querySelector('[data-role="photoInput"]').onchange=async e=>{for(const f of [...e.target.files].slice(0,10-item.photos.length))item.photos.push(await compressImage(f,1200,.82));persistTrips();renderScheduleList(di)};
+    box.appendChild(c);
+  });
+}
 function openDirectUrl(raw){
   const u=normalizeUrl(raw);
   if(!u){toast("網址格式不正確");return}
@@ -894,6 +1121,7 @@ async function cloudGetBackupSchema(){
   if(!supabaseClient||!supabaseSessionUser)throw new Error("請先登入");
   const candidates={
     id:["id"],trip_id:["trip_id"],trip_day_id:["trip_day_id"],created_by:["created_by"],created_at:["created_at"],
+    sort_order:["sort_order","display_order","position","sort_index"],
     label:["label","backup_label","backup_type","title","name","plan_name","backup_name"],
     place:["place_name","place","location","location_name","venue_name","destination"],
     description:["description","desc","notes","note","content","details"]
@@ -927,6 +1155,7 @@ async function cloudLoadBackupRows(di){
   if(!t?.supabase||!day?.supabaseDayId)return [];
   const map=await cloudGetBackupSchema();
   let q=supabaseClient.from("backup_plans").select("*").eq(map.trip_day_id,day.supabaseDayId);
+  if(map.sort_order)q=q.order(map.sort_order,{ascending:true,nullsFirst:false});
   if(map.created_at)q=q.order(map.created_at,{ascending:true});
   const {data,error}=await q;
   if(error)throw error;
@@ -962,15 +1191,30 @@ async function cloudCreateBackupPlan(di){
   if(!cloudCanEditTrip(t.id)){toast("VIEWER 只能查看，不能新增備用行程");return}
   if(!day?.supabaseDayId){toast("找不到這一天的 trip_day_id，請重新讀取雲端旅程");return}
   let map;try{map=await cloudGetBackupSchema()}catch(err){toast(err.message||String(err));return}
-  let count=0;try{count=(await cloudLoadBackupRows(di)).length}catch(e){}
+  let rows=[];try{rows=await cloudLoadBackupRows(di)}catch(e){}
   const payload={[map.trip_id]:t.id,[map.trip_day_id]:day.supabaseDayId};
-  if(map.label)payload[map.label]=`雨天備${count+1}`;
+  if(map.label)payload[map.label]=`雨天備${rows.length+1}`;
   if(map.place)payload[map.place]="";
   if(map.description)payload[map.description]="";
+  if(map.sort_order)payload[map.sort_order]=Math.max(0,...rows.map((r,i)=>Number(r[map.sort_order])||i+1))+1;
   const {error}=await supabaseClient.from("backup_plans").insert(payload);
   if(error){toast("新增備用行程失敗："+error.message);return}
-  await renderCloudBackup(di);toast("已新增雲端備用行程");
+  await renderCloudBackup(di);toast("已新增到備用行程最後一筆");
 }
+
+async function cloudMoveBackup(rows,idx,dir,di,map){
+  const target=idx+dir;
+  if(target<0||target>=rows.length)return;
+  if(!map.sort_order){toast("請先執行 v03 Supabase SQL，才能永久調整雲端備用行程順序");return}
+  const a=rows[idx],b=rows[target];
+  const ao=Number(a[map.sort_order])||idx+1,bo=Number(b[map.sort_order])||target+1;
+  const r1=await supabaseClient.from("backup_plans").update({[map.sort_order]:bo}).eq(map.id,a[map.id]);
+  if(r1.error){toast("排序失敗："+r1.error.message);return}
+  const r2=await supabaseClient.from("backup_plans").update({[map.sort_order]:ao}).eq(map.id,b[map.id]);
+  if(r2.error){toast("排序失敗："+r2.error.message);return}
+  await renderCloudBackup(di);
+}
+
 async function cloudUpdateBackup(row,role,val,di){
   if(!cloudCanEditTrip(row.trip_id)){toast("VIEWER 只能查看，不能修改備用行程");return}
   const map=await cloudGetBackupSchema(),col=map[role];
@@ -1032,14 +1276,17 @@ async function renderCloudBackup(di){
   box.innerHTML=`<div class="mini" style="padding:8px 0">正在讀取 Supabase 備用行程…</div>`;
   try{
     const map=await cloudGetBackupSchema(),rows=await cloudLoadBackupRows(di),assetMap=await cloudLoadBackupAssets(rows);box.innerHTML="";
-    const note=document.createElement("div");note.className="cloudSyncNote";note.textContent=canEdit?"備用行程已同步雲端。":"目前為唯讀模式。";box.appendChild(note);
+    const note=document.createElement("div");note.className="cloudSyncNote";note.textContent=canEdit?"備用行程與排序已同步雲端。":"目前為唯讀模式。";box.appendChild(note);
     if(!rows.length){const e=document.createElement("div");e.className="mini";e.style.padding="8px 0";e.textContent=canEdit?"目前沒有備用行程，按下「＋ 新增一個備用行程」。":"目前沒有備用行程。";box.appendChild(e);return}
     rows.forEach((row,idx)=>{
       row.trip_id=row[map.trip_id];row.created_by=map.created_by?row[map.created_by]:row.created_by;
       const assets=assetMap[row.id]||{links:[],photos:[]},c=document.createElement("div");c.className="scheduleCard";
       const disabled=canEdit?"":" disabled",canDelete=cloudCanDeleteBackup(row),labelDisabled=(!canEdit||!map.label)?" disabled":"",placeDisabled=(!canEdit||!map.place)?" disabled":"",descDisabled=(!canEdit||!map.description)?" disabled":"";
-      c.innerHTML=`<div class="scheduleTop"><div class="inlineGroup backup"><input data-role-col="label" value="${escapeAttr(row._label)}" placeholder="雨天備1"${labelDisabled}><input data-role-col="place" value="${escapeAttr(row._place)}" placeholder="XX百貨公司"${placeDisabled}></div><div class="rowActions">${canDelete?'<button class="deleteBtn" data-act="deleteCloudBackup" type="button">刪除</button>':''}<button class="collapseBtn open" data-act="collapse" type="button">⌄</button></div></div><div class="scheduleBody"><textarea class="input" data-role-col="description" rows="2" placeholder="介紹 / 備註"${descDisabled}>${escapeHtml(row._description)}</textarea><div class="cloudScheduleMeta"><span class="cloudOwnerPill">${escapeHtml(cloudCreatorLabel(row))}</span><span>雲端資料</span></div><div class="cloudAssetSection"><div class="cloudAssetHead"><span class="cloudAssetTitle">網址</span>${canEdit?'<button class="smallBtn" data-act="addBackupLink" type="button">＋ 新增網址</button>':''}</div><div class="linkRow" data-role="backupLinks"></div></div><div class="cloudAssetSection"><div class="cloudAssetHead"><span class="cloudAssetTitle">照片</span>${canEdit?'<label class="cloudUploadLabel" data-role="backupUploadLabel">＋ 從手機相簿插入照片<input data-role="backupPhotoInput" type="file" multiple accept="image/*" hidden></label>':''}</div><div class="photo3" data-role="backupPhotos"></div><div class="cloudPhotoStatus">Private Storage · 以 signed URL 顯示</div></div></div>`;
+      const orderHtml=canEdit?`<div class="orderBtns"><button class="orderBtn" data-act="up" type="button" aria-label="往上移"${idx===0?" disabled":""}>↑</button><button class="orderBtn" data-act="down" type="button" aria-label="往下移"${idx===rows.length-1?" disabled":""}>↓</button></div>`:"";
+      c.innerHTML=`<div class="scheduleTop"><div class="inlineGroup backup"><input data-role-col="label" value="${escapeAttr(row._label)}" placeholder="雨天備1"${labelDisabled}><input data-role-col="place" value="${escapeAttr(row._place)}" placeholder="XX百貨公司"${placeDisabled}></div><div class="rowActions">${orderHtml}${canDelete?'<button class="deleteBtn" data-act="deleteCloudBackup" type="button">刪除</button>':''}<button class="collapseBtn open" data-act="collapse" type="button">⌄</button></div></div><div class="scheduleBody"><textarea class="input" data-role-col="description" rows="2" placeholder="介紹 / 備註"${descDisabled}>${escapeHtml(row._description)}</textarea><div class="cloudScheduleMeta"><span class="cloudOwnerPill">${escapeHtml(cloudCreatorLabel(row))}</span><span>雲端資料</span></div><div class="cloudAssetSection"><div class="cloudAssetHead"><span class="cloudAssetTitle">網址</span>${canEdit?'<button class="smallBtn" data-act="addBackupLink" type="button">＋ 新增網址</button>':''}</div><div class="linkRow" data-role="backupLinks"></div></div><div class="cloudAssetSection"><div class="cloudAssetHead"><span class="cloudAssetTitle">照片</span>${canEdit?'<label class="cloudUploadLabel" data-role="backupUploadLabel">＋ 從手機相簿插入照片<input data-role="backupPhotoInput" type="file" multiple accept="image/*" hidden></label>':''}</div><div class="photo3" data-role="backupPhotos"></div><div class="cloudPhotoStatus">Private Storage · 以 signed URL 顯示</div></div></div>`;
       c.querySelectorAll("[data-role-col]").forEach(el=>{el.onchange=e=>void cloudUpdateBackup(row,e.currentTarget.dataset.roleCol,e.currentTarget.value,di)});
+      const up=c.querySelector('[data-act="up"]');if(up)up.onclick=()=>cloudMoveBackup(rows,idx,-1,di,map);
+      const down=c.querySelector('[data-act="down"]');if(down)down.onclick=()=>cloudMoveBackup(rows,idx,1,di,map);
       const del=c.querySelector('[data-act="deleteCloudBackup"]');if(del)del.onclick=()=>cloudDeleteBackup(row,assets,di);
       c.querySelector('[data-act="collapse"]').onclick=e=>{const body=c.querySelector(".scheduleBody");body.classList.toggle("hidden");e.currentTarget.classList.toggle("open",!body.classList.contains("hidden"))};
       const addLink=c.querySelector('[data-act="addBackupLink"]');if(addLink)addLink.onclick=()=>openSimpleTextForm("新增網址","網址","https://",v=>{void cloudAddBackupLink(row,di,v);return true});
@@ -1049,7 +1296,26 @@ async function renderCloudBackup(di){
   }catch(err){box.innerHTML=`<div class="mini" style="padding:8px 0;color:#8B6663">讀取備用行程失敗：${escapeHtml(err.message||String(err))}</div>`}
 }
 
-function renderBackup(di){const tripForBackup=currentTrip();if(tripForBackup?.supabase){void renderCloudBackup(di);return}const d=currentTrip().days[di],box=$("backupList");box.innerHTML="";if(!d.backup.length)box.innerHTML=`<div class="mini" style="padding:8px 0">目前沒有備用行程。</div>`;d.backup.forEach((item,idx)=>{item.links=item.links||[];item.photos=item.photos||[];const c=document.createElement("div");c.className="scheduleCard";c.innerHTML=`<div class="scheduleTop"><div class="inlineGroup backup"><input data-k="label" value="${escapeAttr(item.label||`雨天備${idx+1}`)}" placeholder="雨天備1"><input data-k="place" value="${escapeAttr(item.place||"")}" placeholder="XX百貨公司"></div><div class="rowActions"><button class="deleteBtn" data-act="delete" type="button">刪除</button><button class="collapseBtn open" data-act="collapse" type="button">⌄</button></div></div><div class="scheduleBody"><textarea class="input" data-k="desc" rows="2" placeholder="介紹 / 備註">${escapeHtml(item.desc||"")}</textarea><div class="linkRow" data-role="links"></div><button class="smallBtn" data-act="addLink" type="button">＋ 網址</button><div class="photo3" data-role="photos"></div><label class="smallBtn">＋ 插入照片<input data-role="photoInput" type="file" multiple accept="image/*" hidden></label></div>`;c.querySelectorAll("[data-k]").forEach(el=>el.oninput=e=>{item[e.target.dataset.k]=e.target.value;persistTrips()});c.querySelector('[data-act="delete"]').onclick=()=>{d.backup.splice(idx,1);persistTrips();renderBackup(di);toast("已刪除備用行程")};c.querySelector('[data-act="collapse"]').onclick=e=>{const body=c.querySelector(".scheduleBody");body.classList.toggle("hidden");e.currentTarget.classList.toggle("open",!body.classList.contains("hidden"))};renderLinks(item,c.querySelector('[data-role="links"]'),()=>renderBackup(di));c.querySelector('[data-act="addLink"]').onclick=()=>openSimpleTextForm("新增網址","網址","https://",v=>{item.links.push(normalizeUrl(v)||v);persistTrips();renderBackup(di)});renderPhotoThumbs(item.photos,c.querySelector('[data-role="photos"]'),i=>{item.photos.splice(i,1);persistTrips();renderBackup(di)});c.querySelector('[data-role="photoInput"]').onchange=async e=>{for(const f of [...e.target.files].slice(0,10-item.photos.length))item.photos.push(await compressImage(f,1200,.82));persistTrips();renderBackup(di)};box.appendChild(c)})}
+function renderBackup(di){
+  const tripForBackup=currentTrip();if(tripForBackup?.supabase){void renderCloudBackup(di);return}
+  const d=currentTrip().days[di],box=$("backupList");box.innerHTML="";
+  if(!d.backup.length)box.innerHTML=`<div class="mini" style="padding:8px 0">目前沒有備用行程。</div>`;
+  d.backup.forEach((item,idx)=>{
+    item.links=item.links||[];item.photos=item.photos||[];
+    const c=document.createElement("div");c.className="scheduleCard";
+    c.innerHTML=`<div class="scheduleTop"><div class="inlineGroup backup"><input data-k="label" value="${escapeAttr(item.label||`雨天備${idx+1}`)}" placeholder="雨天備1"><input data-k="place" value="${escapeAttr(item.place||"")}" placeholder="XX百貨公司"></div><div class="rowActions"><div class="orderBtns"><button class="orderBtn" data-act="up" type="button" aria-label="往上移"${idx===0?" disabled":""}>↑</button><button class="orderBtn" data-act="down" type="button" aria-label="往下移"${idx===d.backup.length-1?" disabled":""}>↓</button></div><button class="deleteBtn" data-act="delete" type="button">刪除</button><button class="collapseBtn open" data-act="collapse" type="button">⌄</button></div></div><div class="scheduleBody"><textarea class="input" data-k="desc" rows="2" placeholder="介紹 / 備註">${escapeHtml(item.desc||"")}</textarea><div class="linkRow" data-role="links"></div><button class="smallBtn" data-act="addLink" type="button">＋ 網址</button><div class="photo3" data-role="photos"></div><label class="smallBtn">＋ 插入照片<input data-role="photoInput" type="file" multiple accept="image/*" hidden></label></div>`;
+    c.querySelectorAll("[data-k]").forEach(el=>el.oninput=e=>{item[e.target.dataset.k]=e.target.value;persistTrips()});
+    c.querySelector('[data-act="up"]').onclick=()=>{if(idx<=0)return;[d.backup[idx-1],d.backup[idx]]=[d.backup[idx],d.backup[idx-1]];persistTrips();renderBackup(di)};
+    c.querySelector('[data-act="down"]').onclick=()=>{if(idx>=d.backup.length-1)return;[d.backup[idx+1],d.backup[idx]]=[d.backup[idx],d.backup[idx+1]];persistTrips();renderBackup(di)};
+    c.querySelector('[data-act="delete"]').onclick=()=>{d.backup.splice(idx,1);persistTrips();renderBackup(di);toast("已刪除備用行程")};
+    c.querySelector('[data-act="collapse"]').onclick=e=>{const body=c.querySelector(".scheduleBody");body.classList.toggle("hidden");e.currentTarget.classList.toggle("open",!body.classList.contains("hidden"))};
+    renderLinks(item,c.querySelector('[data-role="links"]'),()=>renderBackup(di));
+    c.querySelector('[data-act="addLink"]').onclick=()=>openSimpleTextForm("新增網址","網址","https://",v=>{item.links.push(normalizeUrl(v)||v);persistTrips();renderBackup(di)});
+    renderPhotoThumbs(item.photos,c.querySelector('[data-role="photos"]'),i=>{item.photos.splice(i,1);persistTrips();renderBackup(di)});
+    c.querySelector('[data-role="photoInput"]').onchange=async e=>{for(const f of [...e.target.files].slice(0,10-item.photos.length))item.photos.push(await compressImage(f,1200,.82));persistTrips();renderBackup(di)};
+    box.appendChild(c);
+  });
+}
 function renderLinks(item,box,refresh){box.innerHTML="";(item.links||[]).forEach((u,i)=>{const row=document.createElement("div");row.className="urlPreviewRow";row.innerHTML=urlPreviewHtml(u);const x=document.createElement("button");x.className="urlPreviewDelete";x.type="button";x.textContent="×";x.onclick=()=>{item.links.splice(i,1);persistTrips();refresh()};row.appendChild(x);box.appendChild(row);bindDirectPreview(row)})}
 function bindDeleteTap(btn,fn){
   let fired=false;
@@ -1148,7 +1414,7 @@ function markerIconSvg(text){
 // ===== v20 Google Maps + Google Places + requested UI fixes =====
 // 重要：請只在你自己的本機 HTML 裡，把下方文字換成自己的 API Key。
 // 不要把完整 API Key 傳到聊天、截圖或公開網站。
-let GOOGLE_MAPS_API_KEY="AIzaSyCoRIr2gEx8E5iRiok4TNU4w7zrP_BYmJ8";
+let GOOGLE_MAPS_API_KEY=localStorage.getItem("nitaGoogleMapsApiKey")||"";
 
 let googleMap=null;
 let dayGoogleMap=null;
@@ -1687,30 +1953,156 @@ function urlPreviewData(raw){
 }
 function urlPreviewHtml(raw){const d=urlPreviewData(raw);if(!d)return '';return `<a class="urlPreviewCard" href="${escapeAttr(d.url)}" target="_self" data-direct-url="${escapeAttr(d.url)}"><img class="urlPreviewThumb" src="${escapeAttr(d.shot)}" alt="網址縮圖" loading="lazy" onerror="this.style.display='none'"><div class="urlPreviewInfo"><div class="urlPreviewTitle">${escapeHtml(d.title)}</div><div class="urlPreviewHost">${escapeHtml(d.url)}</div><div class="urlPreviewOpen">開啟網址 ↗</div></div></a>`}
 function bindDirectPreview(root=document){root.querySelectorAll('[data-direct-url]').forEach(a=>a.onclick=e=>{e.preventDefault();openDirectUrl(a.dataset.directUrl)})}
+let adminMemberRows=[];
+let adminMemberPerms=[];
+let selectedAdminMember=null;
+let selectedAvatarMember=null;
+let memberAvatarColumnSupported=null;
+let memberEmailColumnSupported=null;
+
+async function profileColumnExistsForMembers(col){
+  const {error}=await supabaseClient.from("profiles").select(col).limit(1);
+  return !error;
+}
+async function ensureMemberProfileColumns(){
+  if(memberAvatarColumnSupported===null)memberAvatarColumnSupported=await profileColumnExistsForMembers("avatar_path");
+  if(memberEmailColumnSupported===null)memberEmailColumnSupported=await profileColumnExistsForMembers("email");
+}
+async function signedMemberAvatar(path){
+  if(!path)return "";
+  const {data,error}=await supabaseClient.storage.from("travel-images").createSignedUrl(path,3600);
+  return error?"":(data?.signedUrl||"");
+}
 async function loadAdminMembers(){
   const panel=$("adminMembers"),list=$("memberList");
   if(!panel||!list)return;
   if(!supabaseSessionUser||!isSupabaseAdmin()||!supabaseFamilyId){panel.hidden=true;list.innerHTML="";return}
   panel.hidden=false;list.innerHTML='<div class="mini">讀取中…</div>';
   try{
+    await ensureMemberProfileColumns();
     const {data:fm,error:fe}=await supabaseClient.from("family_members").select("user_id").eq("family_id",supabaseFamilyId);
     if(fe)throw fe;
     const ids=[...new Set((fm||[]).map(x=>x.user_id).filter(Boolean))];
-    if(!ids.length){list.innerHTML='<div class="mini">目前沒有會員資料。</div>';return}
-    const {data:profiles,error:pe}=await supabaseClient.from("profiles").select("id,display_name,role,account_status").in("id",ids);
+    if(!ids.length){adminMemberRows=[];adminMemberPerms=[];list.innerHTML='<div class="mini">目前沒有會員資料。</div>';return}
+    let cols="id,display_name,role,account_status";
+    if(memberAvatarColumnSupported)cols+=",avatar_path";
+    if(memberEmailColumnSupported)cols+=",email";
+    const {data:profiles,error:pe}=await supabaseClient.from("profiles").select(cols).in("id",ids);
     if(pe)throw pe;
     const tripIds=(supabaseCloudTrips||[]).map(t=>t.id);
     let perms=[];
-    if(tripIds.length){const r=await supabaseClient.from("trip_members").select("user_id,trip_id,permission").in("trip_id",tripIds);if(!r.error)perms=r.data||[]}
-    const tripNames=Object.fromEntries((supabaseCloudTrips||[]).map(t=>[t.id,t.title||"未命名旅行"]));
+    if(tripIds.length){
+      const r=await supabaseClient.from("trip_members").select("user_id,trip_id,permission").in("trip_id",tripIds).in("user_id",ids);
+      if(!r.error)perms=r.data||[];
+    }
+    adminMemberRows=profiles||[];
+    adminMemberPerms=perms||[];
     list.innerHTML="";
-    (profiles||[]).forEach(p=>{
-      const mine=(perms||[]).filter(x=>x.user_id===p.id).map(x=>`${tripNames[x.trip_id]||"旅行"}：${String(x.permission||"VIEWER").toUpperCase()}`);
+    for(const p of adminMemberRows){
+      const name=p.display_name||"未命名會員";
+      const email=(p.id===supabaseSessionUser.id?(supabaseSessionUser.email||""):(p.email||""));
+      const avatar=memberAvatarColumnSupported?await signedMemberAvatar(p.avatar_path):"";
       const row=document.createElement("div");row.className="memberRow";
-      row.innerHTML=`<div class="memberTop"><div class="memberName">${escapeHtml(p.display_name||"未命名會員")}</div><span class="rolePill">${String(p.role||"member").toUpperCase()}</span></div><div class="memberMeta">狀態：${escapeHtml(p.account_status||"-")}${mine.length?"<br>旅行權限："+mine.map(escapeHtml).join("、"):""}</div>`;
+      row.innerHTML=`<button class="memberAvatar${avatar?" hasPhoto":""}" type="button" data-member-avatar="${escapeAttr(p.id)}" aria-label="更換 ${escapeAttr(name)} 的照片">${avatar?`<img src="${escapeAttr(avatar)}" alt="">`:""}<span class="memberAvatarFallback">${escapeHtml(name)}</span></button><div class="memberInfo"><div class="memberName">${escapeHtml(name)}</div><div class="memberEmail">${escapeHtml(email||"Email 由 Auth 管理")}</div><div class="memberBadges"><span class="rolePill">${String(p.role||"member").toUpperCase()}</span><span class="memberStatusPill${String(p.account_status||"active")==="active"?"":" off"}">${String(p.account_status||"active")==="active"?"使用中":"已停用"}</span></div></div><button class="memberChevron" type="button" data-member-open="${escapeAttr(p.id)}" aria-label="開啟成員設定">›</button>`;
+      row.querySelector("[data-member-avatar]").onclick=()=>chooseMemberAvatar(p.id);
+      row.querySelector("[data-member-open]").onclick=()=>openMemberSettings(p.id);
       list.appendChild(row);
-    });
+    }
   }catch(e){list.innerHTML='<div class="mini">會員資料讀取失敗：'+escapeHtml(e?.message||String(e))+'</div>'}
+}
+function chooseMemberAvatar(userId){
+  if(!isSupabaseAdmin()){toast("只有 ADMIN 可以修改成員照片");return}
+  if(!memberAvatarColumnSupported){toast("請先執行 v03 Supabase SQL，建立 avatar_path 欄位");return}
+  selectedAvatarMember=adminMemberRows.find(x=>x.id===userId);
+  if(!selectedAvatarMember)return;
+  const input=$("memberAvatarInput");input.value="";input.click();
+}
+async function uploadSelectedMemberAvatar(file){
+  if(!file||!selectedAvatarMember)return;
+  if(!file.type.startsWith("image/")){toast("請選擇照片");return}
+  try{
+    toast("正在上傳照片…");
+    const ext=(file.name.split(".").pop()||"jpg").toLowerCase();
+    const path=`family-avatars/${selectedAvatarMember.id}/${Date.now()}.${ext}`;
+    const {error:ue}=await supabaseClient.storage.from("travel-images").upload(path,file,{contentType:file.type,cacheControl:"3600",upsert:false});
+    if(ue)throw ue;
+    const old=selectedAvatarMember.avatar_path||"";
+    const {error:pe}=await supabaseClient.from("profiles").update({avatar_path:path}).eq("id",selectedAvatarMember.id);
+    if(pe){await supabaseClient.storage.from("travel-images").remove([path]);throw pe}
+    if(old)await supabaseClient.storage.from("travel-images").remove([old]);
+    toast("成員照片已更新");
+    await loadAdminMembers();
+  }catch(e){toast("照片上傳失敗："+(e.message||String(e)))}
+}
+function openMemberSettings(userId){
+  selectedAdminMember=adminMemberRows.find(x=>x.id===userId);
+  if(!selectedAdminMember)return;
+  $("memberEditName").value=selectedAdminMember.display_name||"";
+  $("memberEditRole").value=String(selectedAdminMember.role||"member").toLowerCase()==="admin"?"admin":"member";
+  $("memberEditStatus").value=String(selectedAdminMember.account_status||"active")==="disabled"?"disabled":"active";
+  const box=$("memberTripPermissionList");box.innerHTML="";
+  (supabaseCloudTrips||[]).forEach(t=>{
+    const existing=adminMemberPerms.find(x=>x.user_id===userId&&x.trip_id===t.id);
+    const row=document.createElement("div");row.className="memberTripPermissionRow";
+    row.innerHTML=`<div class="memberTripName">${escapeHtml(t.title||"未命名旅行")}</div><select class="input softSelect" data-trip-perm="${escapeAttr(t.id)}"><option value="VIEWER">僅檢視</option><option value="EDITOR">可編輯</option></select>`;
+    row.querySelector("select").value=String(existing?.permission||"VIEWER").toUpperCase()==="EDITOR"?"EDITOR":"VIEWER";
+    box.appendChild(row);
+  });
+  $("removeFamilyMemberBtn").style.display=userId===supabaseSessionUser.id?"none":"block";
+  $("memberSettingsOverlay").classList.add("show");
+}
+function closeMemberSettings(){$("memberSettingsOverlay").classList.remove("show");selectedAdminMember=null}
+async function saveMemberSettings(){
+  if(!selectedAdminMember||!isSupabaseAdmin())return;
+  const name=$("memberEditName").value.trim();
+  if(!name){toast("請輸入姓名");return}
+  try{
+    const patch={display_name:name,role:$("memberEditRole").value,account_status:$("memberEditStatus").value};
+    const {error:pe}=await supabaseClient.from("profiles").update(patch).eq("id",selectedAdminMember.id);
+    if(pe)throw pe;
+    const selects=[...$("memberTripPermissionList").querySelectorAll("[data-trip-perm]")];
+    for(const sel of selects){
+      const tripId=sel.dataset.tripPerm,permission=sel.value;
+      const existing=adminMemberPerms.find(x=>x.user_id===selectedAdminMember.id&&x.trip_id===tripId);
+      if(existing){
+        const {error}=await supabaseClient.from("trip_members").update({permission}).eq("user_id",selectedAdminMember.id).eq("trip_id",tripId);
+        if(error)throw error;
+      }else{
+        const {error}=await supabaseClient.from("trip_members").insert({user_id:selectedAdminMember.id,trip_id:tripId,permission});
+        if(error)throw error;
+      }
+    }
+    toast("成員設定已儲存");closeMemberSettings();await refreshSupabaseAccountAndTrips();await loadAdminMembers();
+  }catch(e){toast("儲存失敗："+(e.message||String(e)))}
+}
+async function removeSelectedFamilyMember(){
+  if(!selectedAdminMember||selectedAdminMember.id===supabaseSessionUser.id)return;
+  if(!confirm(`確定要把「${selectedAdminMember.display_name||"此成員"}」移出家庭嗎？`))return;
+  try{
+    const {error:te}=await supabaseClient.from("trip_members").delete().eq("user_id",selectedAdminMember.id);
+    if(te)throw te;
+    const {error:fe}=await supabaseClient.from("family_members").delete().eq("family_id",supabaseFamilyId).eq("user_id",selectedAdminMember.id);
+    if(fe)throw fe;
+    toast("已移除家庭成員");closeMemberSettings();await loadAdminMembers();
+  }catch(e){toast("移除失敗："+(e.message||String(e)))}
+}
+function openAddFamilyMember(){
+  if(!isSupabaseAdmin()){toast("只有 ADMIN 可以新增家庭成員");return}
+  $("newMemberName").value="";$("newMemberEmail").value="";$("newMemberPassword").value="";
+  $("addFamilyMemberOverlay").classList.add("show");
+}
+function closeAddFamilyMember(){$("addFamilyMemberOverlay").classList.remove("show")}
+async function createFamilyMember(){
+  const display_name=$("newMemberName").value.trim(),email=$("newMemberEmail").value.trim().toLowerCase(),password=$("newMemberPassword").value;
+  if(!display_name||!email||!password){toast("姓名、Email、密碼都要填寫");return}
+  if(password.length<6){toast("密碼至少 6 個字元");return}
+  try{
+    toast("正在建立家庭帳號…");
+    const {data,error}=await supabaseClient.functions.invoke("admin-create-family-member",{body:{display_name,email,password,family_id:supabaseFamilyId}});
+    if(error)throw error;
+    if(data?.error)throw new Error(data.error);
+    closeAddFamilyMember();toast("家庭成員已建立");await loadAdminMembers();
+  }catch(e){toast("新增失敗："+(e.message||String(e)))}
 }
 
 /* ===== v23.1 AUTH WRITE LOCK =====
@@ -1866,10 +2258,21 @@ document.querySelectorAll(".navBtn").forEach(b=>b.onclick=()=>{
   const brand=localStorage.getItem("travelBrandV23")||localStorage.getItem("travelBrandV13");
   if(brand)$("brandTitle").textContent=brand;
   if(!state.trips[state.currentTripId])state.currentTripId=Object.keys(state.trips)[0];
-  installLoggedOutWriteGuard();setupSupabaseStageOne();if($("refreshMembersBtn"))$("refreshMembersBtn").onclick=loadAdminMembers;renderAll();refreshAccountUI();syncGlobalHeaderToggle("schedulePage");if(hasGoogleApiKey())loadGoogleMapsApi().catch(()=>{});else setMapStatus("地圖服務尚未完成設定。",true)
+  installLoggedOutWriteGuard();setupSupabaseStageOne();
+  if($("refreshMembersBtn"))$("refreshMembersBtn").onclick=loadAdminMembers;
+  if($("addFamilyMemberBtn"))$("addFamilyMemberBtn").onclick=openAddFamilyMember;
+  if($("memberAvatarInput"))$("memberAvatarInput").onchange=e=>{const f=e.target.files?.[0];e.target.value="";if(f)void uploadSelectedMemberAvatar(f)};
+  if($("closeMemberSettingsBtn"))$("closeMemberSettingsBtn").onclick=closeMemberSettings;
+  if($("saveMemberSettingsBtn"))$("saveMemberSettingsBtn").onclick=()=>void saveMemberSettings();
+  if($("removeFamilyMemberBtn"))$("removeFamilyMemberBtn").onclick=()=>void removeSelectedFamilyMember();
+  if($("closeAddFamilyMemberBtn"))$("closeAddFamilyMemberBtn").onclick=closeAddFamilyMember;
+  if($("createFamilyMemberBtn"))$("createFamilyMemberBtn").onclick=()=>void createFamilyMember();
+  if($("memberSettingsOverlay"))$("memberSettingsOverlay").onclick=e=>{if(e.target.id==="memberSettingsOverlay")closeMemberSettings()};
+  if($("addFamilyMemberOverlay"))$("addFamilyMemberOverlay").onclick=e=>{if(e.target.id==="addFamilyMemberOverlay")closeAddFamilyMember()};
+  renderAll();refreshAccountUI();syncGlobalHeaderToggle("schedulePage");if(hasGoogleApiKey())loadGoogleMapsApi().catch(()=>{});else setMapStatus("地圖服務尚未完成設定。",true)
 })();
 </script>
 
-<script>console.info("Nita Travel Production Clean");</script>
+<script>console.info("Nita Travel 旅行v03 Integrated");</script>
 </body>
 </html>
