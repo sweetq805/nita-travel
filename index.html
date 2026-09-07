@@ -402,7 +402,7 @@ body.loggedOutMode input:disabled,body.loggedOutMode textarea:disabled,body.logg
 </style>
 </head>
 <body>
-<!-- Nita Travel 旅行v03.1：旅行v02母版 + 成員管理權限修正 + 行程排序 + 帳號大按鈕 -->
+<!-- Nita Travel FINAL：旅行v02母版 + 成員管理原子化 + 永久排序 + 帳號大按鈕 -->
 <div class="app" id="appRoot">
 <button class="globalHeaderToggle" id="globalHeaderToggle" type="button" aria-label="收合上方行程資訊" title="收合 / 展開上方行程資訊">⌃</button>
 <header class="header">
@@ -548,7 +548,10 @@ function toast(msg){const t=$("toast");t.textContent=msg;t.classList.add("show")
 // 絕對不要把 service_role、sb_secret_... 或資料庫密碼放進前端。
 const APP_CONFIG={
   supabaseUrl:"https://xhcsiyjqdzixmissigjo.supabase.co",
-  supabasePublishableKey:"sb_publishable_f0ZgHjc1yjMva0ZzldT46Q_yC7LCt0i"
+  supabasePublishableKey:"sb_publishable_f0ZgHjc1yjMva0ZzldT46Q_yC7LCt0i",
+  // 若正式網站已把 Google Maps browser key 寫在這裡，會優先使用；
+  // 留空時仍沿用目前裝置既有的 localStorage 設定，不會讓舊裝置突然失效。
+  googleMapsApiKey:"AIzaSyCoRIr2gEx8E5iRiok4TNU4w7zrP_BYmJ8"
 };
 // 保留舊裝置 localStorage 作為相容 fallback；正式 GitHub Pages 會優先使用 APP_CONFIG。
 const SUPABASE_URL_STORAGE_KEY="nitaSupabaseProjectUrl";
@@ -579,7 +582,7 @@ function buildSupabaseClient(){
     return true;
   }catch(err){setSupabaseStatus("雲端設定錯誤："+err.message,"bad");supabaseClient=null;return false}
 }
-function isSupabaseAdmin(){return supabaseProfile?.role==="admin"}
+function isSupabaseAdmin(){return supabaseProfile?.role==="admin"&&String(supabaseProfile?.account_status||"active").toLowerCase()==="active"}
 function cloudPermissionFor(tripId){return isSupabaseAdmin()?"ADMIN":String(supabaseTripPermissions[tripId]||"VIEWER").toUpperCase()}
 function canEditCloudTrip(tripId){const p=cloudPermissionFor(tripId);return p==="ADMIN"||p==="EDITOR"}
 function mergeCloudTripIntoState(t,permission,dayRows=[]){
@@ -647,21 +650,40 @@ async function refreshSupabaseAccountAndTrips(){
   const {data:profile,error:profileErr}=await supabaseClient.from("profiles").select("id,display_name,role,account_status").eq("id",supabaseSessionUser.id).single();
   if(profileErr){setSupabaseStatus("已登入，但讀取 profiles 失敗："+profileErr.message,"bad");return}
   supabaseProfile=profile;
+
+  if(String(profile.account_status||"active").toLowerCase()!=="active"){
+    try{await supabaseClient.auth.signOut()}catch(_){}
+    supabaseSessionUser=null;supabaseProfile=null;supabaseCloudTrips=[];supabaseTripPermissions={};supabaseFamilyId=null;
+    $("supabaseSummaryState").textContent="帳號已停用";
+    setSupabaseStatus("此帳號目前已停用，請聯絡 ADMIN。","bad");
+    renderCloudTrips();refreshAccountUI();applyLoggedOutWriteLock();
+    return;
+  }
+
   const {data:familyRows,error:familyErr}=await supabaseClient.from("family_members").select("family_id").eq("user_id",supabaseSessionUser.id).limit(1);
   if(familyErr){setSupabaseStatus("讀取家庭資料失敗："+familyErr.message,"bad");return}
   supabaseFamilyId=familyRows?.[0]?.family_id||null;
+  if(!supabaseFamilyId&&profile.role!=="admin"){
+    try{await supabaseClient.auth.signOut()}catch(_){}
+    supabaseSessionUser=null;supabaseProfile=null;supabaseCloudTrips=[];supabaseTripPermissions={};
+    $("supabaseSummaryState").textContent="尚未加入家庭";
+    setSupabaseStatus("此帳號目前不屬於任何家庭。","bad");
+    renderCloudTrips();refreshAccountUI();applyLoggedOutWriteLock();
+    return;
+  }
+
   const {data:trips,error:tripErr}=await supabaseClient.from("trips").select("id,title,city,country,start_date,end_date,notes,created_by,created_at").order("start_date",{ascending:true});
   if(tripErr){setSupabaseStatus("讀取雲端旅程失敗："+tripErr.message,"bad");return}
   supabaseCloudTrips=trips||[];supabaseTripPermissions={};
   if(profile.role!=="admin"&&supabaseCloudTrips.length){
     const {data:perms,error:permErr}=await supabaseClient.from("trip_members").select("trip_id,permission").eq("user_id",supabaseSessionUser.id);
     if(permErr){setSupabaseStatus("旅程讀到了，但讀取 VIEWER / EDITOR 權限失敗："+permErr.message,"bad");return}
-    (perms||[]).forEach(x=>supabaseTripPermissions[x.trip_id]=x.permission);
+    (perms||[]).forEach(x=>supabaseTripPermissions[x.trip_id]=String(x.permission||"viewer").toLowerCase());
   }
   const roleText=profile.role==="admin"?"ADMIN":"MEMBER";
   $("supabaseSummaryState").textContent=roleText;
   refreshAccountUI();
-  setSupabaseStatus(`登入成功\n${profile.display_name?"名稱："+profile.display_name+"\n":""}帳號：${supabaseSessionUser.email||""}\nRole：${profile.role}\nStatus：${profile.account_status}\n可查看雲端旅程：${supabaseCloudTrips.length} 趟`,profile.account_status==="active"?"ok":"bad");
+  setSupabaseStatus(`登入成功\n${profile.display_name?"名稱："+profile.display_name+"\n":""}帳號：${supabaseSessionUser.email||""}\nRole：${profile.role}\nStatus：${profile.account_status}\n可查看雲端旅程：${supabaseCloudTrips.length} 趟`,"ok");
   renderCloudTrips();
   if(isSupabaseAdmin())void loadAdminMembers();
   try{await syncCloudTripsIntoApp()}catch(e){setSupabaseStatus("帳號已登入，但同步 trip_days 失敗："+e.message,"bad")}
@@ -893,14 +915,15 @@ async function cloudCreateItinerary(di){
 async function cloudMoveItinerary(rows,idx,dir,di){
   const target=idx+dir;
   if(target<0||target>=rows.length)return;
-  if(!(await cloudItineraryHasSortOrder())){toast("請先執行 v03 Supabase SQL，才能永久調整雲端順序");return}
-  const a=rows[idx],b=rows[target];
-  const ao=Number(a.sort_order)||idx+1,bo=Number(b.sort_order)||target+1;
-  const r1=await supabaseClient.from("itinerary_items").update({sort_order:bo}).eq("id",a.id);
-  if(r1.error){toast("排序失敗："+r1.error.message);return}
-  const r2=await supabaseClient.from("itinerary_items").update({sort_order:ao}).eq("id",b.id);
-  if(r2.error){toast("排序失敗："+r2.error.message);return}
-  await renderCloudScheduleList(di);
+  if(!(await cloudItineraryHasSortOrder())){toast("請先執行最終 Supabase SQL，才能永久調整雲端順序");return}
+  const row=rows[idx];
+  try{
+    const {error}=await supabaseClient.rpc("move_itinerary_item",{p_item_id:row.id,p_direction:dir});
+    if(error)throw error;
+    await renderCloudScheduleList(di);
+  }catch(e){
+    toast("排序失敗："+(e.message||String(e)));
+  }
 }
 
 async function cloudDeleteItinerary(row,di){
@@ -1206,14 +1229,15 @@ async function cloudCreateBackupPlan(di){
 async function cloudMoveBackup(rows,idx,dir,di,map){
   const target=idx+dir;
   if(target<0||target>=rows.length)return;
-  if(!map.sort_order){toast("請先執行 v03 Supabase SQL，才能永久調整雲端備用行程順序");return}
-  const a=rows[idx],b=rows[target];
-  const ao=Number(a[map.sort_order])||idx+1,bo=Number(b[map.sort_order])||target+1;
-  const r1=await supabaseClient.from("backup_plans").update({[map.sort_order]:bo}).eq(map.id,a[map.id]);
-  if(r1.error){toast("排序失敗："+r1.error.message);return}
-  const r2=await supabaseClient.from("backup_plans").update({[map.sort_order]:ao}).eq(map.id,b[map.id]);
-  if(r2.error){toast("排序失敗："+r2.error.message);return}
-  await renderCloudBackup(di);
+  if(!map.sort_order){toast("請先執行最終 Supabase SQL，才能永久調整雲端備用行程順序");return}
+  const row=rows[idx];
+  try{
+    const {error}=await supabaseClient.rpc("move_backup_plan",{p_item_id:row.id,p_direction:dir});
+    if(error)throw error;
+    await renderCloudBackup(di);
+  }catch(e){
+    toast("排序失敗："+(e.message||String(e)));
+  }
 }
 
 async function cloudUpdateBackup(row,role,val,di){
@@ -1415,7 +1439,7 @@ function markerIconSvg(text){
 // ===== v20 Google Maps + Google Places + requested UI fixes =====
 // 重要：請只在你自己的本機 HTML 裡，把下方文字換成自己的 API Key。
 // 不要把完整 API Key 傳到聊天、截圖或公開網站。
-let GOOGLE_MAPS_API_KEY=localStorage.getItem("nitaGoogleMapsApiKey")||"";
+let GOOGLE_MAPS_API_KEY=String(APP_CONFIG.googleMapsApiKey||"").trim()||localStorage.getItem("nitaGoogleMapsApiKey")||"";
 
 let googleMap=null;
 let dayGoogleMap=null;
@@ -2046,17 +2070,22 @@ function openMemberSettings(userId){
   const self=userId===supabaseSessionUser.id;
   $("memberEditName").value=selectedAdminMember.display_name||"";
   $("memberEditRole").value=String(selectedAdminMember.role||"member").toLowerCase()==="admin"?"admin":"member";
-  $("memberEditStatus").value=String(selectedAdminMember.account_status||"active")==="disabled"?"disabled":"active";
+  $("memberEditStatus").value=String(selectedAdminMember.account_status||"active").toLowerCase()==="disabled"?"disabled":"active";
+
   $("memberEditRole").disabled=self;
-  $("memberEditRole").title=self?"目前登入中的 ADMIN 不可把自己改成 MEMBER":"";
+  $("memberEditStatus").disabled=self;
+  $("memberEditRole").title=self?"目前登入中的 ADMIN 不可變更自己的角色":"";
+  $("memberEditStatus").title=self?"目前登入中的 ADMIN 不可停用自己":"";
+
   const box=$("memberTripPermissionList");box.innerHTML="";
   (supabaseCloudTrips||[]).forEach(t=>{
     const existing=adminMemberPerms.find(x=>x.user_id===userId&&x.trip_id===t.id);
     const row=document.createElement("div");row.className="memberTripPermissionRow";
-    row.innerHTML=`<div class="memberTripName">${escapeHtml(t.title||"未命名旅行")}</div><select class="input softSelect" data-trip-perm="${escapeAttr(t.id)}"><option value="VIEWER">僅檢視</option><option value="EDITOR">可編輯</option></select>`;
-    row.querySelector("select").value=String(existing?.permission||"VIEWER").toUpperCase()==="EDITOR"?"EDITOR":"VIEWER";
+    row.innerHTML=`<div class="memberTripName">${escapeHtml(t.title||"未命名旅行")}</div><select class="input softSelect" data-trip-perm="${escapeAttr(t.id)}"><option value="viewer">僅檢視</option><option value="editor">可編輯</option></select>`;
+    row.querySelector("select").value=String(existing?.permission||"viewer").toLowerCase()==="editor"?"editor":"viewer";
     box.appendChild(row);
   });
+
   $("memberEditRole").onchange=syncMemberRoleUI;
   syncMemberRoleUI();
   $("removeFamilyMemberBtn").style.display=self?"none":"block";
@@ -2067,83 +2096,29 @@ async function saveMemberSettings(){
   if(!selectedAdminMember||!isSupabaseAdmin())return;
   const userId=selectedAdminMember.id;
   const self=userId===supabaseSessionUser.id;
-  const oldRole=String(selectedAdminMember.role||"member").toLowerCase()==="admin"?"admin":"member";
-  const newRole=self?"admin":$("memberEditRole").value;
   const name=$("memberEditName").value.trim();
-  const status=$("memberEditStatus").value;
-  if(!name){toast("請輸入姓名");return}
-  if(self&&newRole!=="admin"){toast("目前登入中的 ADMIN 不可把自己改成 MEMBER");return}
+  const role=self?"admin":String($("memberEditRole").value||"member").toLowerCase();
+  const status=self?"active":String($("memberEditStatus").value||"active").toLowerCase();
 
-  const permissionSelections=[...$("memberTripPermissionList").querySelectorAll("[data-trip-perm]")].map(sel=>({
-    tripId:sel.dataset.tripPerm,
-    permission:sel.value
+  if(!name){toast("請輸入姓名");return}
+  if(!["admin","member"].includes(role)){toast("角色格式不正確");return}
+  if(!["active","disabled"].includes(status)){toast("帳號狀態格式不正確");return}
+
+  const permissions=[...$("memberTripPermissionList").querySelectorAll("[data-trip-perm]")].map(sel=>({
+    trip_id:sel.dataset.tripPerm,
+    permission:String(sel.value||"viewer").toLowerCase()
   }));
 
   try{
-    // ADMIN 不需要 trip_members。
-    if(newRole==="admin"){
-      const {error:pe}=await supabaseClient.from("profiles").update({
-        display_name:name,
-        role:"admin",
-        account_status:status
-      }).eq("id",userId);
-      if(pe)throw pe;
-
-      if(!self){
-        const {error:de}=await supabaseClient.from("trip_members").delete().eq("user_id",userId);
-        if(de)throw de;
-      }
-    }else{
-      // MEMBER 才需要每趟旅行的 EDITOR / VIEWER。
-      // 若由 ADMIN 降為 MEMBER，先改角色，再寫 trip_members；
-      // 若後面失敗，會嘗試把角色回復為 ADMIN，避免留下半套狀態。
-      let demotedFromAdmin=false;
-      if(oldRole==="admin"){
-        const {error:demoteError}=await supabaseClient.from("profiles").update({
-          display_name:name,
-          role:"member",
-          account_status:status
-        }).eq("id",userId);
-        if(demoteError)throw demoteError;
-        demotedFromAdmin=true;
-      }
-
-      try{
-        for(const item of permissionSelections){
-          const existing=adminMemberPerms.find(x=>x.user_id===userId&&x.trip_id===item.tripId);
-          if(existing){
-            const {error}=await supabaseClient.from("trip_members")
-              .update({permission:item.permission})
-              .eq("user_id",userId)
-              .eq("trip_id",item.tripId);
-            if(error)throw error;
-          }else{
-            const {error}=await supabaseClient.from("trip_members")
-              .insert({user_id:userId,trip_id:item.tripId,permission:item.permission});
-            if(error)throw error;
-          }
-        }
-
-        if(!demotedFromAdmin){
-          const {error:pe}=await supabaseClient.from("profiles").update({
-            display_name:name,
-            role:"member",
-            account_status:status
-          }).eq("id",userId);
-          if(pe)throw pe;
-        }
-      }catch(innerErr){
-        if(demotedFromAdmin){
-          await supabaseClient.from("profiles").update({
-            display_name:selectedAdminMember.display_name||name,
-            role:"admin",
-            account_status:selectedAdminMember.account_status||"active"
-          }).eq("id",userId);
-        }
-        throw innerErr;
-      }
-    }
-
+    const {data,error}=await supabaseClient.rpc("admin_update_family_member",{
+      p_family_id:supabaseFamilyId,
+      p_user_id:userId,
+      p_display_name:name,
+      p_role:role,
+      p_account_status:status,
+      p_permissions:permissions
+    });
+    if(error)throw error;
     toast("成員設定已儲存");
     closeMemberSettings();
     await refreshSupabaseAccountAndTrips();
@@ -2156,12 +2131,18 @@ async function removeSelectedFamilyMember(){
   if(!selectedAdminMember||selectedAdminMember.id===supabaseSessionUser.id)return;
   if(!confirm(`確定要把「${selectedAdminMember.display_name||"此成員"}」移出家庭嗎？`))return;
   try{
-    const {error:te}=await supabaseClient.from("trip_members").delete().eq("user_id",selectedAdminMember.id);
-    if(te)throw te;
-    const {error:fe}=await supabaseClient.from("family_members").delete().eq("family_id",supabaseFamilyId).eq("user_id",selectedAdminMember.id);
-    if(fe)throw fe;
-    toast("已移除家庭成員");closeMemberSettings();await loadAdminMembers();
-  }catch(e){toast("移除失敗："+(e.message||String(e)))}
+    const {error}=await supabaseClient.rpc("admin_remove_family_member",{
+      p_family_id:supabaseFamilyId,
+      p_user_id:selectedAdminMember.id
+    });
+    if(error)throw error;
+    toast("已移除家庭成員");
+    closeMemberSettings();
+    await refreshSupabaseAccountAndTrips();
+    await loadAdminMembers();
+  }catch(e){
+    toast("移除失敗："+(e.message||String(e)));
+  }
 }
 function openAddFamilyMember(){
   if(!isSupabaseAdmin()){toast("只有 ADMIN 可以新增家庭成員");return}
@@ -2175,11 +2156,19 @@ async function createFamilyMember(){
   if(password.length<6){toast("密碼至少 6 個字元");return}
   try{
     toast("正在建立家庭帳號…");
-    const {data,error}=await supabaseClient.functions.invoke("admin-create-family-member",{body:{display_name,email,password,family_id:supabaseFamilyId}});
+    const permissions=(supabaseCloudTrips||[]).map(t=>({trip_id:t.id,permission:"viewer"}));
+    const {data,error}=await supabaseClient.functions.invoke("admin-create-family-member",{
+      body:{display_name,email,password,family_id:supabaseFamilyId,permissions}
+    });
     if(error)throw error;
     if(data?.error)throw new Error(data.error);
-    closeAddFamilyMember();toast("家庭成員已建立");await loadAdminMembers();
-  }catch(e){toast("新增失敗："+(e.message||String(e)))}
+    closeAddFamilyMember();
+    toast("家庭成員已建立，預設為 VIEWER");
+    await refreshSupabaseAccountAndTrips();
+    await loadAdminMembers();
+  }catch(e){
+    toast("新增失敗："+(e.message||String(e))+(String(e.message||e).toLowerCase().includes("function")?"（請確認 Edge Function 已部署）":""));
+  }
 }
 
 /* ===== v23.1 AUTH WRITE LOCK =====
@@ -2350,6 +2339,6 @@ document.querySelectorAll(".navBtn").forEach(b=>b.onclick=()=>{
 })();
 </script>
 
-<script>console.info("Nita Travel 旅行v03.1 Member Permission Fix");</script>
+<script>console.info("Nita Travel FINAL Member + Sort Audit");</script>
 </body>
 </html>
