@@ -234,6 +234,7 @@ input,textarea,select{outline:none}
 #accountPage.loggedOut #supabaseLogoutBtn{display:none!important}
 #accountPage.loggedOut #supabaseAccountStatus{display:none!important}
 #accountPage.loggedIn #supabaseEmailInput,#accountPage.loggedIn #supabasePasswordInput,#accountPage.loggedIn #supabaseLoginBtn,#accountPage.loggedIn .field:has(#supabaseEmailInput),#accountPage.loggedIn .field:has(#supabasePasswordInput){display:none!important}
+#accountPage.loggedIn #registerMemberBtn{display:none!important}
 #accountPage.loggedIn #supabaseAccountStatus{display:none!important}
 #accountPage.loggedIn .supabaseBody{padding-top:0}
 
@@ -399,10 +400,24 @@ body.loggedOutMode input:disabled,body.loggedOutMode textarea:disabled,body.logg
   .memberChevron{width:32px}
 }
 
+
+/* ===== Nita Travel Stable Membership + Day Hotel + Avatar ===== */
+.registerMemberBtn{
+  width:100%;margin-top:13px;padding:11px 14px;border:0;background:transparent!important;
+  box-shadow:none!important;color:#8B716D;font-size:12px;text-decoration:underline;
+  text-underline-offset:3px
+}
+.registerMemberBtn:active{transform:scale(.97)}
+.registerNote,.addMemberNote{font-size:10px;color:var(--muted);line-height:1.55;margin:7px 2px 0}
+.memberAvatar{cursor:pointer;-webkit-tap-highlight-color:transparent}
+.memberAvatar input{display:none!important}
+.memberAvatar.uploading{opacity:.55;pointer-events:none}
+.hotelSaveState{font-size:9px;color:var(--muted);margin-top:4px}
+
 </style>
 </head>
 <body>
-<!-- Nita Travel FINAL：旅行v02母版 + 成員管理原子化 + 永久排序 + 帳號大按鈕 -->
+<!-- Nita Travel STABLE：簡化會員 + 每日飯店雲端儲存 + 成員頭像 + 永久排序 -->
 <div class="app" id="appRoot">
 <button class="globalHeaderToggle" id="globalHeaderToggle" type="button" aria-label="收合上方行程資訊" title="收合 / 展開上方行程資訊">⌃</button>
 <header class="header">
@@ -465,6 +480,7 @@ body.loggedOutMode input:disabled,body.loggedOutMode textarea:disabled,body.logg
       <div class="field"><span class="label">帳號</span><input class="input" id="supabaseEmailInput" type="email" autocomplete="username" placeholder="Email"></div>
       <div class="field"><span class="label">密碼</span><input class="input" id="supabasePasswordInput" type="password" autocomplete="current-password" placeholder="密碼"></div>
       <div class="supabaseActions"><button class="smallBtn" id="supabaseLoginBtn" type="button">登入</button><button class="smallBtn" id="supabaseLogoutBtn" type="button">登出</button></div>
+      <button class="registerMemberBtn" id="registerMemberBtn" type="button">第一次使用？註冊會員</button>
       <div class="supabaseStatus" id="supabaseAccountStatus">尚未登入。</div>
       <div id="cloudTripList" hidden></div>
       <span id="supabaseSummaryState" hidden>尚未登入</span>
@@ -479,7 +495,7 @@ body.loggedOutMode input:disabled,body.loggedOutMode textarea:disabled,body.logg
           <button class="memberAdminAdd" id="addFamilyMemberBtn" type="button">＋ 新增家庭成員</button>
         </div>
       </div>
-      <div class="memberHelp">點擊圓形頭像可直接從手機相簿更換照片；點右側 › 可設定角色、狀態與每趟旅行權限。</div>
+      <div class="memberHelp">點擊圓形頭像可直接從手機相簿更換照片；點右側 › 可設定角色、狀態與每趟旅行權限。新增成員前，對方需先完成會員註冊。</div>
       <div id="memberList" class="memberList"></div>
     </div>
   </section>
@@ -501,8 +517,6 @@ body.loggedOutMode input:disabled,body.loggedOutMode textarea:disabled,body.logg
 
 <div class="overlay" id="viewerOverlay"><div class="viewer"><img class="viewerImg" id="viewerImg" alt=""><button class="viewerBtn viewerClose" id="viewerClose">×</button><button class="viewerBtn viewerPrev" id="viewerPrev">‹</button><button class="viewerBtn viewerNext" id="viewerNext">›</button></div></div>
 
-<input id="memberAvatarInput" type="file" accept="image/*">
-
 <div class="overlay" id="memberSettingsOverlay">
   <div class="modal">
     <div class="modalTitle">成員設定</div>
@@ -522,11 +536,22 @@ body.loggedOutMode input:disabled,body.loggedOutMode textarea:disabled,body.logg
 <div class="overlay" id="addFamilyMemberOverlay">
   <div class="modal">
     <div class="modalTitle">新增家庭成員</div>
-    <div class="field"><span class="label">姓名</span><input class="input" id="newMemberName" type="text" autocomplete="name"></div>
-    <div class="field"><span class="label">Email</span><input class="input" id="newMemberEmail" type="email" autocomplete="email"></div>
-    <div class="field"><span class="label">密碼</span><input class="input" id="newMemberPassword" type="password" autocomplete="new-password"></div>
-    <button class="memberModalSave" id="createFamilyMemberBtn" type="button">建立家庭帳號</button>
+    <div class="field"><span class="label">已註冊會員 Email</span><input class="input" id="newMemberEmail" type="email" autocomplete="email" placeholder="member@gmail.com"></div>
+    <div class="addMemberNote">對方需先在「登入 / 帳號」頁完成會員註冊。加入後固定為 MEMBER，所有現有旅行先給 VIEWER；需要編輯時再從成員設定改成 EDITOR。</div>
+    <button class="memberModalSave" id="createFamilyMemberBtn" type="button">加入家庭</button>
     <div class="modalActions"><button class="cancel" id="closeAddFamilyMemberBtn" type="button">關閉</button></div>
+  </div>
+</div>
+
+<div class="overlay" id="registerMemberOverlay">
+  <div class="modal">
+    <div class="modalTitle">註冊會員</div>
+    <div class="field"><span class="label">姓名</span><input class="input" id="registerNameInput" type="text" autocomplete="name" placeholder="你的姓名"></div>
+    <div class="field"><span class="label">Email</span><input class="input" id="registerEmailInput" type="email" autocomplete="email" placeholder="Email"></div>
+    <div class="field"><span class="label">密碼</span><input class="input" id="registerPasswordInput" type="password" autocomplete="new-password" placeholder="至少 6 個字元"></div>
+    <div class="registerNote">註冊完成後先不會看到家庭旅行資料。請把註冊 Email 告訴 ADMIN，由 ADMIN 加入家庭。</div>
+    <button class="memberModalSave" id="submitRegisterMemberBtn" type="button">註冊會員</button>
+    <div class="modalActions"><button class="cancel" id="closeRegisterMemberBtn" type="button">關閉</button></div>
   </div>
 </div>
 
@@ -592,7 +617,7 @@ function mergeCloudTripIntoState(t,permission,dayRows=[]){
   const days=[];
   for(let i=0;i<dayCount;i++){
     const row=dayRows[i]||{}; const old=oldDays[i]||{};
-    days.push({...old,schedule:old.schedule||[],backup:old.backup||[],shopping:old.shopping||[],pocketFood:old.pocketFood||[],supabaseDayId:row.id||old.supabaseDayId||null,date:row.day_date||addDays(t.start_date,i),dayNumber:row.day_number||i+1});
+    days.push({...old,schedule:old.schedule||[],backup:old.backup||[],shopping:old.shopping||[],pocketFood:old.pocketFood||[],hotel:(row.hotel_name??old.hotel??""),supabaseDayId:row.id||old.supabaseDayId||null,date:row.day_date||addDays(t.start_date,i),dayNumber:row.day_number||i+1});
   }
   state.trips[t.id]={id:t.id,flag:existing.flag||"✈️",name:t.title||"未命名旅行",start:t.start_date,end:t.end_date,city:t.city||"",country:t.country||"",hotel:existing.hotel||"",weather:existing.weather||[["⛅",28,22],["🌤️",29,22],["☀️",30,23],["🌦️",28,22],["⛅",29,23],["☀️",31,24],["🌤️",30,23]],flight:existing.flight||{out:["TPE","—","尚未設定","—"],back:["—","TPE","尚未設定","—"]},notes:t.notes||existing.notes||"",markers:existing.markers||[],days,qr:existing.qr||[],supabase:true,supabasePermission:permission};
 }
@@ -608,7 +633,7 @@ async function syncCloudTripsIntoApp(){
   });
 
   if(ids.length){
-    const {data:rows,error}=await supabaseClient.from("trip_days").select("id,trip_id,day_date,day_number").in("trip_id",ids).order("day_number",{ascending:true});
+    const {data:rows,error}=await supabaseClient.from("trip_days").select("id,trip_id,day_date,day_number,hotel_name").in("trip_id",ids).order("day_number",{ascending:true});
     if(error)throw error;
     (rows||[]).forEach(r=>(supabaseTripDays[r.trip_id]||(supabaseTripDays[r.trip_id]=[])).push(r));
   }
@@ -739,7 +764,7 @@ function fmtSlash(iso){return iso.replaceAll("-","/")}
 function addDays(iso,n){const d=new Date(iso+"T12:00:00");d.setDate(d.getDate()+n);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`}
 function daysInclusive(a,b){return Math.max(1,Math.round((new Date(b+"T12:00:00")-new Date(a+"T12:00:00"))/86400000)+1)}
 function dow(iso){return ["SUN","MON","TUE","WED","THU","FRI","SAT"][new Date(iso+"T12:00:00").getDay()]}
-function ensureDays(t){const n=daysInclusive(t.start,t.end);t.days=t.days||[];while(t.days.length<n)t.days.push({schedule:[],backup:[],shopping:[],pocketFood:[]});t.days=t.days.slice(0,n);t.days.forEach(d=>{d.schedule=d.schedule||[];d.backup=d.backup||[];d.shopping=d.shopping||[];d.pocketFood=d.pocketFood||[]})}
+function ensureDays(t){const n=daysInclusive(t.start,t.end);t.days=t.days||[];while(t.days.length<n)t.days.push({schedule:[],backup:[],shopping:[],pocketFood:[],hotel:""});t.days=t.days.slice(0,n);t.days.forEach(d=>{d.schedule=d.schedule||[];d.backup=d.backup||[];d.shopping=d.shopping||[];d.pocketFood=d.pocketFood||[];d.hotel=d.hotel||""})}
 
 function renderAll(){if(!state.trips[state.currentTripId])state.currentTripId=Object.keys(state.trips)[0];const t=currentTrip();ensureDays(t);$("topTripName").textContent=`${t.flag||"✈️"} ${t.name}`;$("topTripDate").textContent=`${fmtSlash(t.start)} — ${fmtSlash(t.end)}`;$("startDateValue").value=t.start;$("endDateValue").value=t.end;$("startDateBtn").textContent=fmtZh(t.start);$("endDateBtn").textContent=fmtZh(t.end);$("newTripName").value=t.name;renderTripList();renderDayTabs();renderSchedulePage();renderBookings();renderMapPage();renderExpenses();renderJournal();renderPlanning();persistTrips();applyLoggedOutWriteLock()}
 
@@ -795,15 +820,32 @@ async function deleteTrip(id){
 
 function renderDayTabs(){const t=currentTrip(),box=$("dayTabs");box.innerHTML="";const info=document.createElement("button");info.className="dayTab"+(state.currentDay==="info"?" active":"");info.innerHTML=`<span class="tiny">INFO</span><span class="dow">重要資訊</span><span class="num">!</span><span class="mon">TRIP</span>`;info.onclick=()=>{state.currentDay="info";renderDayTabs();renderSchedulePage()};box.appendChild(info);for(let i=0;i<daysInclusive(t.start,t.end);i++){const iso=addDays(t.start,i),b=document.createElement("button");b.className="dayTab"+(state.currentDay===i?" active":"");b.innerHTML=`<span class="tiny">D${i+1}</span><span class="dow">${dow(iso)}</span><span class="num">${Number(iso.slice(8))}</span><span class="mon">${iso.slice(5,7)}月</span>`;b.onclick=()=>{state.currentDay=i;renderDayTabs();renderSchedulePage()};box.appendChild(b)}}
 
+
+const dayHotelSaveTimers={};
+async function saveDayHotelCloud(tripId,dayId,value){
+  if(!supabaseClient||!supabaseSessionUser||!dayId)return;
+  if(!canEditCloudTrip(tripId)){toast("VIEWER 只能查看住宿飯店");return}
+  const {error}=await supabaseClient.from("trip_days").update({hotel_name:value}).eq("id",dayId).eq("trip_id",tripId);
+  if(error){toast("住宿飯店儲存失敗："+error.message);return}
+}
+function queueDayHotelSave(trip,day,value){
+  day.hotel=value;
+  persistTrips();
+  if(!trip?.supabase||!day?.supabaseDayId)return;
+  const key=day.supabaseDayId;
+  clearTimeout(dayHotelSaveTimers[key]);
+  dayHotelSaveTimers[key]=setTimeout(()=>void saveDayHotelCloud(trip.id,day.supabaseDayId,value),500);
+}
+
 function renderSchedulePage(){const t=currentTrip(),wrap=$("scheduleContent");ensureDays(t);if(state.currentDay==="info"){wrap.innerHTML=`<div class="section">天氣預報</div><div class="card"><div class="weatherStrip" id="weatherStrip"></div><div class="weatherStatus" id="weatherStatus">正在取得旅行目的地天氣…</div></div><div class="section">機票航班</div><div class="card flightCard" id="flightArea"></div><div class="section">注意事項</div><div class="card"><textarea class="input" rows="5" id="notesInput">${escapeHtml(t.notes||"")}</textarea></div><div class="section sectionTitleRow"><span>入境條碼</span><button class="collapseBare" id="qrCollapseBtn" type="button" aria-label="收合入境條碼">⌃</button></div><div class="card" id="qrCard"><div class="qrGrid" id="qrGrid"></div></div>`;renderWeather();refreshWeatherFromNetwork();renderFlight();renderQR();$("notesInput").oninput=e=>{t.notes=e.target.value;persistTrips()};$("qrCollapseBtn").onclick=()=>{const c=$("qrCard"),hidden=c.style.display==="none";c.style.display=hidden?"":"none";$("qrCollapseBtn").textContent=hidden?"⌃":"⌄"};return}
- const di=state.currentDay,d=t.days[di],iso=addDays(t.start,di);wrap.innerHTML=`<div class="card dayHotelCombined"><div class="dayHotelRow"><div class="dayHotelInfo"><div class="dayTitle">Day ${di+1} · ${iso.slice(5).replace("-","/")}</div><div class="mini">${dow(iso)} · ${escapeHtml(t.city||t.name)}</div></div><input class="input" id="hotelInput" value="${escapeAttr(t.hotel||"")}" placeholder="住宿飯店"><button class="smallBtn" id="hotelNavBtn" type="button">導航</button></div></div><div class="section">探索地圖</div>
+ const di=state.currentDay,d=t.days[di],iso=addDays(t.start,di),canEditHotel=!t.supabase||canEditCloudTrip(t.id);wrap.innerHTML=`<div class="card dayHotelCombined"><div class="dayHotelRow"><div class="dayHotelInfo"><div class="dayTitle">Day ${di+1} · ${iso.slice(5).replace("-","/")}</div><div class="mini">${dow(iso)} · ${escapeHtml(t.city||t.name)}</div></div><input class="input" id="hotelInput" value="${escapeAttr(d.hotel||"")}" placeholder="住宿飯店"${canEditHotel?"":" disabled"}><button class="smallBtn" id="hotelNavBtn" type="button">導航</button></div></div><div class="section">探索地圖</div>
 <div class="card">
   <div class="dayGoogleMap" id="dayMap"></div>
   <div class="dayMapToolbar"><button class="chip" id="dayLocateBtn" type="button">◎ 開啟我的即時定位</button></div><div class="mapStatus" id="dayMapStatus"></div>
   <div class="dayMapNote">與「地圖」分頁共用同一份 Google 地標資料。新增或刪除地標後，所有日期頁都會同步更新。</div>
 </div><div class="section">每日行程</div><div id="scheduleList"></div><button class="primary" id="addScheduleBtn" type="button">＋ 新增行程</button><div class="section">備用行程</div><div class="card"><div class="sectionHead" id="backupToggle"><span>備用行程</span><button class="collapseBtn open" type="button">⌄</button></div><div class="collapsibleBody" id="backupBody"><div id="backupList"></div><button class="primary" id="addBackupBtn" type="button">＋ 新增一個備用行程</button></div></div><div class="section">購物清單</div><div class="card"><div class="sectionHead" id="shoppingToggle"><span>購物清單</span><button class="collapseBtn open" type="button">⌄</button></div><div class="collapsibleBody" id="shoppingBody"><div class="photo4" id="shoppingGrid"></div><label class="smallBtn">＋ 從手機相簿插入商品照片<input id="shoppingInput" type="file" multiple accept="image/*" hidden></label></div></div><div class="section">口袋美食</div><div class="card"><div class="sectionHead" id="foodToggle"><span>口袋美食</span><button class="collapseBtn open" type="button">⌄</button></div><div class="collapsibleBody" id="foodBody"><div class="photo4" id="foodGrid"></div><label class="smallBtn">＋ 從手機相簿插入美食照片<input id="foodInput" type="file" multiple accept="image/*" hidden></label></div></div>`;
  initDayGoogleMap();renderScheduleList(di);renderBackup(di);const rerenderShopping=()=>{persistTrips();renderGallery(d.shopping,$("shoppingGrid"),"商品名稱",rerenderShopping)};const rerenderFood=()=>{persistTrips();renderGallery(d.pocketFood,$("foodGrid"),"店名 / 想吃什麼",rerenderFood)};renderGallery(d.shopping,$("shoppingGrid"),"商品名稱",rerenderShopping);renderGallery(d.pocketFood,$("foodGrid"),"店名 / 想吃什麼",rerenderFood);
- $("hotelInput").oninput=e=>{t.hotel=e.target.value;persistTrips()};$("hotelNavBtn").onclick=()=>navigateHotel(t.hotel);$("addScheduleBtn").onclick=async()=>{if(t.supabase){await cloudCreateItinerary(di);return}d.schedule.push({time:"09:00",type:"早餐",place:"店名",desc:"",links:[],photos:[]});persistTrips();renderScheduleList(di)};$("addBackupBtn").onclick=async()=>{if(t.supabase){await cloudCreateBackupPlan(di);return}d.backup.push({label:`雨天備${d.backup.length+1}`,place:"",desc:"",links:[],photos:[]});persistTrips();renderBackup(di)};$("shoppingInput").onchange=e=>addGalleryPhotos(d.shopping,[...e.target.files],rerenderShopping);$("foodInput").onchange=e=>addGalleryPhotos(d.pocketFood,[...e.target.files],rerenderFood);setupSectionToggle("backupToggle","backupBody");setupSectionToggle("shoppingToggle","shoppingBody");setupSectionToggle("foodToggle","foodBody");if($("dayLocateBtn"))$("dayLocateBtn").onclick=startLiveLocation}
+ if(canEditHotel){$("hotelInput").oninput=e=>queueDayHotelSave(t,d,e.target.value);$("hotelInput").onchange=e=>{clearTimeout(dayHotelSaveTimers[d.supabaseDayId]);d.hotel=e.target.value;persistTrips();if(t.supabase)void saveDayHotelCloud(t.id,d.supabaseDayId,e.target.value)}}$("hotelNavBtn").onclick=()=>navigateHotel(d.hotel);$("addScheduleBtn").onclick=async()=>{if(t.supabase){await cloudCreateItinerary(di);return}d.schedule.push({time:"09:00",type:"早餐",place:"店名",desc:"",links:[],photos:[]});persistTrips();renderScheduleList(di)};$("addBackupBtn").onclick=async()=>{if(t.supabase){await cloudCreateBackupPlan(di);return}d.backup.push({label:`雨天備${d.backup.length+1}`,place:"",desc:"",links:[],photos:[]});persistTrips();renderBackup(di)};$("shoppingInput").onchange=e=>addGalleryPhotos(d.shopping,[...e.target.files],rerenderShopping);$("foodInput").onchange=e=>addGalleryPhotos(d.pocketFood,[...e.target.files],rerenderFood);setupSectionToggle("backupToggle","backupBody");setupSectionToggle("shoppingToggle","shoppingBody");setupSectionToggle("foodToggle","foodBody");if($("dayLocateBtn"))$("dayLocateBtn").onclick=startLiveLocation}
 function setupSectionToggle(headId,bodyId){const h=$(headId),b=$(bodyId),c=h.querySelector(".collapseBtn");h.onclick=e=>{if(e.target.closest("input,label"))return;b.classList.toggle("hidden");c.classList.toggle("open",!b.classList.contains("hidden"))}}
 function navigateHotel(name){
   const t=currentTrip(),q=(name||"").trim();
@@ -2028,37 +2070,69 @@ async function loadAdminMembers(){
       const email=(p.id===supabaseSessionUser.id?(supabaseSessionUser.email||""):(p.email||""));
       const avatar=memberAvatarColumnSupported?await signedMemberAvatar(p.avatar_path):"";
       const row=document.createElement("div");row.className="memberRow";
-      row.innerHTML=`<button class="memberAvatar${avatar?" hasPhoto":""}" type="button" data-member-avatar="${escapeAttr(p.id)}" aria-label="更換 ${escapeAttr(name)} 的照片">${avatar?`<img src="${escapeAttr(avatar)}" alt="">`:""}<span class="memberAvatarFallback">${escapeHtml(name)}</span></button><div class="memberInfo"><div class="memberName">${escapeHtml(name)}</div><div class="memberEmail">${escapeHtml(email||"Email 由 Auth 管理")}</div><div class="memberBadges"><span class="rolePill">${String(p.role||"member").toUpperCase()}</span><span class="memberStatusPill${String(p.account_status||"active")==="active"?"":" off"}">${String(p.account_status||"active")==="active"?"使用中":"已停用"}</span></div></div><button class="memberChevron" type="button" data-member-open="${escapeAttr(p.id)}" aria-label="開啟成員設定">›</button>`;
-      row.querySelector("[data-member-avatar]").onclick=()=>chooseMemberAvatar(p.id);
+      row.innerHTML=`<label class="memberAvatar${avatar?" hasPhoto":""}" data-member-avatar="${escapeAttr(p.id)}" aria-label="更換 ${escapeAttr(name)} 的照片"><input type="file" accept="image/*,.heic,.heif" data-member-avatar-input="${escapeAttr(p.id)}">${avatar?`<img src="${escapeAttr(avatar)}" alt="">`:""}<span class="memberAvatarFallback">${escapeHtml(name)}</span></label><div class="memberInfo"><div class="memberName">${escapeHtml(name)}</div><div class="memberEmail">${escapeHtml(email||"Email 由 Auth 管理")}</div><div class="memberBadges"><span class="rolePill">${String(p.role||"member").toUpperCase()}</span><span class="memberStatusPill${String(p.account_status||"active")==="active"?"":" off"}">${String(p.account_status||"active")==="active"?"使用中":"已停用"}</span></div></div><button class="memberChevron" type="button" data-member-open="${escapeAttr(p.id)}" aria-label="開啟成員設定">›</button>`;
+      const avatarInput=row.querySelector("[data-member-avatar-input]");
+      avatarInput.onchange=e=>{const f=e.currentTarget.files?.[0];e.currentTarget.value="";if(f)void uploadMemberAvatarFor(p.id,f,row.querySelector(".memberAvatar"))};
       row.querySelector("[data-member-open]").onclick=()=>openMemberSettings(p.id);
       list.appendChild(row);
     }
   }catch(e){list.innerHTML='<div class="mini">會員資料讀取失敗：'+escapeHtml(e?.message||String(e))+'</div>'}
 }
-function chooseMemberAvatar(userId){
-  if(!isSupabaseAdmin()){toast("只有 ADMIN 可以修改成員照片");return}
-  if(!memberAvatarColumnSupported){toast("請先執行 v03 Supabase SQL，建立 avatar_path 欄位");return}
-  selectedAvatarMember=adminMemberRows.find(x=>x.id===userId);
-  if(!selectedAvatarMember)return;
-  const input=$("memberAvatarInput");input.value="";input.click();
-}
-async function uploadSelectedMemberAvatar(file){
-  if(!file||!selectedAvatarMember)return;
-  if(!file.type.startsWith("image/")){toast("請選擇照片");return}
+
+async function prepareAvatarBlob(file){
   try{
+    if(file.type.startsWith("image/")){
+      const dataUrl=await compressImage(file,900,.84);
+      if(dataUrl){
+        const res=await fetch(dataUrl);
+        return {blob:await res.blob(),ext:"jpg",contentType:"image/jpeg"};
+      }
+    }
+  }catch(_){}
+  const ext=(file.name.split(".").pop()||"jpg").toLowerCase().replace(/[^a-z0-9]/g,"")||"jpg";
+  return {blob:file,ext,contentType:file.type||"application/octet-stream"};
+}
+async function uploadMemberAvatarFor(userId,file,labelEl){
+  if(!isSupabaseAdmin()){toast("只有 ADMIN 可以修改成員照片");return}
+  if(!memberAvatarColumnSupported){toast("請先執行最新整合 SQL，建立 avatar_path 欄位");return}
+  if(!file){return}
+  if(!(file.type||"").startsWith("image/")&&!/\.(heic|heif|jpg|jpeg|png|webp)$/i.test(file.name||"")){
+    toast("請選擇照片");return
+  }
+  try{
+    if(labelEl)labelEl.classList.add("uploading");
     toast("正在上傳照片…");
-    const ext=(file.name.split(".").pop()||"jpg").toLowerCase();
-    const path=`family-avatars/${selectedAvatarMember.id}/${Date.now()}.${ext}`;
-    const {error:ue}=await supabaseClient.storage.from("travel-images").upload(path,file,{contentType:file.type,cacheControl:"3600",upsert:false});
-    if(ue)throw ue;
-    const old=selectedAvatarMember.avatar_path||"";
-    const {error:pe}=await supabaseClient.from("profiles").update({avatar_path:path}).eq("id",selectedAvatarMember.id);
-    if(pe){await supabaseClient.storage.from("travel-images").remove([path]);throw pe}
-    if(old)await supabaseClient.storage.from("travel-images").remove([old]);
+    const prepared=await prepareAvatarBlob(file);
+    const path=`family-avatars/${supabaseFamilyId}/${userId}/avatar-${Date.now()}.${prepared.ext}`;
+    const {error:uploadError}=await supabaseClient.storage.from("travel-images").upload(
+      path,
+      prepared.blob,
+      {contentType:prepared.contentType,cacheControl:"3600",upsert:false}
+    );
+    if(uploadError)throw new Error("Storage："+uploadError.message);
+
+    const {data:oldPath,error:pathError}=await supabaseClient.rpc("admin_set_member_avatar_path",{
+      p_user_id:userId,
+      p_avatar_path:path
+    });
+    if(pathError){
+      await supabaseClient.storage.from("travel-images").remove([path]);
+      throw new Error("profiles："+pathError.message);
+    }
+
+    if(oldPath&&oldPath!==path){
+      await supabaseClient.storage.from("travel-images").remove([oldPath]);
+    }
+
     toast("成員照片已更新");
     await loadAdminMembers();
-  }catch(e){toast("照片上傳失敗："+(e.message||String(e)))}
+  }catch(e){
+    toast("照片上傳失敗："+(e.message||String(e)));
+  }finally{
+    if(labelEl)labelEl.classList.remove("uploading");
+  }
 }
+
 function syncMemberRoleUI(){
   const role=$("memberEditRole").value;
   const block=$("memberPermBlock");
@@ -2146,28 +2220,66 @@ async function removeSelectedFamilyMember(){
 }
 function openAddFamilyMember(){
   if(!isSupabaseAdmin()){toast("只有 ADMIN 可以新增家庭成員");return}
-  $("newMemberName").value="";$("newMemberEmail").value="";$("newMemberPassword").value="";
+  $("newMemberEmail").value="";
   $("addFamilyMemberOverlay").classList.add("show");
 }
 function closeAddFamilyMember(){$("addFamilyMemberOverlay").classList.remove("show")}
 async function createFamilyMember(){
-  const display_name=$("newMemberName").value.trim(),email=$("newMemberEmail").value.trim().toLowerCase(),password=$("newMemberPassword").value;
-  if(!display_name||!email||!password){toast("姓名、Email、密碼都要填寫");return}
-  if(password.length<6){toast("密碼至少 6 個字元");return}
+  const email=$("newMemberEmail").value.trim().toLowerCase();
+  if(!email){toast("請輸入已註冊會員 Email");return}
   try{
-    toast("正在建立家庭帳號…");
-    const permissions=(supabaseCloudTrips||[]).map(t=>({trip_id:t.id,permission:"viewer"}));
-    const {data,error}=await supabaseClient.functions.invoke("admin-create-family-member",{
-      body:{display_name,email,password,family_id:supabaseFamilyId,permissions}
+    toast("正在加入家庭…");
+    const {data,error}=await supabaseClient.rpc("admin_add_registered_member_by_email",{
+      p_family_id:supabaseFamilyId,
+      p_email:email
     });
     if(error)throw error;
-    if(data?.error)throw new Error(data.error);
     closeAddFamilyMember();
-    toast("家庭成員已建立，預設為 VIEWER");
+    toast("已加入家庭，預設為 VIEWER");
     await refreshSupabaseAccountAndTrips();
     await loadAdminMembers();
   }catch(e){
-    toast("新增失敗："+(e.message||String(e))+(String(e.message||e).toLowerCase().includes("function")?"（請確認 Edge Function 已部署）":""));
+    toast("加入失敗："+(e.message||String(e)));
+  }
+}
+
+
+function openRegisterMember(){
+  if(supabaseSessionUser){toast("請先登出目前帳號");return}
+  $("registerNameInput").value="";
+  $("registerEmailInput").value=$("supabaseEmailInput")?.value||"";
+  $("registerPasswordInput").value="";
+  $("registerMemberOverlay").classList.add("show");
+}
+function closeRegisterMember(){
+  $("registerMemberOverlay").classList.remove("show");
+}
+async function registerMember(){
+  if(!supabaseClient&&!buildSupabaseClient()){toast("雲端服務尚未完成設定");return}
+  const display_name=$("registerNameInput").value.trim();
+  const email=$("registerEmailInput").value.trim().toLowerCase();
+  const password=$("registerPasswordInput").value;
+  if(!display_name||!email||!password){toast("姓名、Email、密碼都要填寫");return}
+  if(password.length<6){toast("密碼至少 6 個字元");return}
+  try{
+    toast("正在註冊會員…");
+    const {data,error}=await supabaseClient.auth.signUp({
+      email,
+      password,
+      options:{data:{display_name}}
+    });
+    if(error)throw error;
+    closeRegisterMember();
+    if(data?.session){
+      await supabaseClient.auth.signOut();
+      supabaseSessionUser=null;supabaseProfile=null;supabaseCloudTrips=[];supabaseTripPermissions={};supabaseFamilyId=null;
+      refreshAccountUI();
+      toast("註冊成功，請通知 ADMIN 用此 Email 加入家庭");
+    }else{
+      toast("註冊成功，請先完成 Email 驗證，再通知 ADMIN 加入家庭");
+    }
+  }catch(e){
+    toast("註冊失敗："+(e.message||String(e)));
   }
 }
 
@@ -2178,11 +2290,10 @@ function authWriteToast(){toast("請先登入後再新增或修改資料")}
 function applyLoggedOutWriteLock(){
   const logged=!!supabaseSessionUser;
   document.body.classList.toggle("loggedOutMode",!logged);
-  const allowInputIds=new Set(["supabaseEmailInput","supabasePasswordInput"]);
+  const allowInputIds=new Set(["supabaseEmailInput","supabasePasswordInput","registerNameInput","registerEmailInput","registerPasswordInput"]);
   document.querySelectorAll('input,textarea,select').forEach(el=>{
     if(allowInputIds.has(el.id)){
-      if(el.id==="supabaseEmailInput"||el.id==="supabasePasswordInput") el.disabled=logged;
-      else el.disabled=false;
+      el.disabled=logged;
       el.classList.remove("authWriteLocked");
       return;
     }
@@ -2327,18 +2438,21 @@ document.querySelectorAll(".navBtn").forEach(b=>b.onclick=()=>{
   installLoggedOutWriteGuard();setupSupabaseStageOne();
   if($("refreshMembersBtn"))$("refreshMembersBtn").onclick=loadAdminMembers;
   if($("addFamilyMemberBtn"))$("addFamilyMemberBtn").onclick=openAddFamilyMember;
-  if($("memberAvatarInput"))$("memberAvatarInput").onchange=e=>{const f=e.target.files?.[0];e.target.value="";if(f)void uploadSelectedMemberAvatar(f)};
-  if($("closeMemberSettingsBtn"))$("closeMemberSettingsBtn").onclick=closeMemberSettings;
+  if($("registerMemberBtn"))$("registerMemberBtn").onclick=openRegisterMember;
+  if($("closeRegisterMemberBtn"))$("closeRegisterMemberBtn").onclick=closeRegisterMember;
+  if($("submitRegisterMemberBtn"))$("submitRegisterMemberBtn").onclick=()=>void registerMember();
+    if($("closeMemberSettingsBtn"))$("closeMemberSettingsBtn").onclick=closeMemberSettings;
   if($("saveMemberSettingsBtn"))$("saveMemberSettingsBtn").onclick=()=>void saveMemberSettings();
   if($("removeFamilyMemberBtn"))$("removeFamilyMemberBtn").onclick=()=>void removeSelectedFamilyMember();
   if($("closeAddFamilyMemberBtn"))$("closeAddFamilyMemberBtn").onclick=closeAddFamilyMember;
   if($("createFamilyMemberBtn"))$("createFamilyMemberBtn").onclick=()=>void createFamilyMember();
   if($("memberSettingsOverlay"))$("memberSettingsOverlay").onclick=e=>{if(e.target.id==="memberSettingsOverlay")closeMemberSettings()};
   if($("addFamilyMemberOverlay"))$("addFamilyMemberOverlay").onclick=e=>{if(e.target.id==="addFamilyMemberOverlay")closeAddFamilyMember()};
+  if($("registerMemberOverlay"))$("registerMemberOverlay").onclick=e=>{if(e.target.id==="registerMemberOverlay")closeRegisterMember()};
   renderAll();refreshAccountUI();syncGlobalHeaderToggle("schedulePage");if(hasGoogleApiKey())loadGoogleMapsApi().catch(()=>{});else setMapStatus("地圖服務尚未完成設定。",true)
 })();
 </script>
 
-<script>console.info("Nita Travel FINAL Member + Sort Audit");</script>
+<script>console.info("Nita Travel STABLE Simple Membership + Day Hotel + Avatar");</script>
 </body>
 </html>
