@@ -389,6 +389,7 @@ body.loggedOutMode input:disabled,body.loggedOutMode textarea:disabled,body.logg
   width:100%;margin-top:10px;padding:11px;border-radius:14px;background:#F3DEDC;color:#8B6663
 }
 #memberAvatarInput{display:none}
+.memberPermBlock.hidden{display:none!important}
 
 @media(max-width:360px){
   .memberRow{grid-template-columns:52px minmax(0,1fr) 32px!important;gap:8px!important}
@@ -401,7 +402,7 @@ body.loggedOutMode input:disabled,body.loggedOutMode textarea:disabled,body.logg
 </style>
 </head>
 <body>
-<!-- Nita Travel 旅行v03：旅行v02母版 + 成員管理 + 行程排序 + 帳號大按鈕 -->
+<!-- Nita Travel 旅行v03.1：旅行v02母版 + 成員管理權限修正 + 行程排序 + 帳號大按鈕 -->
 <div class="app" id="appRoot">
 <button class="globalHeaderToggle" id="globalHeaderToggle" type="button" aria-label="收合上方行程資訊" title="收合 / 展開上方行程資訊">⌃</button>
 <header class="header">
@@ -508,7 +509,7 @@ body.loggedOutMode input:disabled,body.loggedOutMode textarea:disabled,body.logg
     <div class="field"><span class="label">姓名</span><input class="input" id="memberEditName" type="text"></div>
     <div class="field"><span class="label">角色</span><select class="input softSelect" id="memberEditRole"><option value="member">MEMBER</option><option value="admin">ADMIN</option></select></div>
     <div class="field"><span class="label">帳號狀態</span><select class="input softSelect" id="memberEditStatus"><option value="active">使用中</option><option value="disabled">停用</option></select></div>
-    <div class="field">
+    <div class="field memberPermBlock" id="memberPermBlock">
       <span class="label">各旅程權限</span>
       <div class="memberTripPermissionList" id="memberTripPermissionList"></div>
     </div>
@@ -2034,12 +2035,20 @@ async function uploadSelectedMemberAvatar(file){
     await loadAdminMembers();
   }catch(e){toast("照片上傳失敗："+(e.message||String(e)))}
 }
+function syncMemberRoleUI(){
+  const role=$("memberEditRole").value;
+  const block=$("memberPermBlock");
+  if(block)block.classList.toggle("hidden",role==="admin");
+}
 function openMemberSettings(userId){
   selectedAdminMember=adminMemberRows.find(x=>x.id===userId);
   if(!selectedAdminMember)return;
+  const self=userId===supabaseSessionUser.id;
   $("memberEditName").value=selectedAdminMember.display_name||"";
   $("memberEditRole").value=String(selectedAdminMember.role||"member").toLowerCase()==="admin"?"admin":"member";
   $("memberEditStatus").value=String(selectedAdminMember.account_status||"active")==="disabled"?"disabled":"active";
+  $("memberEditRole").disabled=self;
+  $("memberEditRole").title=self?"目前登入中的 ADMIN 不可把自己改成 MEMBER":"";
   const box=$("memberTripPermissionList");box.innerHTML="";
   (supabaseCloudTrips||[]).forEach(t=>{
     const existing=adminMemberPerms.find(x=>x.user_id===userId&&x.trip_id===t.id);
@@ -2048,32 +2057,100 @@ function openMemberSettings(userId){
     row.querySelector("select").value=String(existing?.permission||"VIEWER").toUpperCase()==="EDITOR"?"EDITOR":"VIEWER";
     box.appendChild(row);
   });
-  $("removeFamilyMemberBtn").style.display=userId===supabaseSessionUser.id?"none":"block";
+  $("memberEditRole").onchange=syncMemberRoleUI;
+  syncMemberRoleUI();
+  $("removeFamilyMemberBtn").style.display=self?"none":"block";
   $("memberSettingsOverlay").classList.add("show");
 }
 function closeMemberSettings(){$("memberSettingsOverlay").classList.remove("show");selectedAdminMember=null}
 async function saveMemberSettings(){
   if(!selectedAdminMember||!isSupabaseAdmin())return;
+  const userId=selectedAdminMember.id;
+  const self=userId===supabaseSessionUser.id;
+  const oldRole=String(selectedAdminMember.role||"member").toLowerCase()==="admin"?"admin":"member";
+  const newRole=self?"admin":$("memberEditRole").value;
   const name=$("memberEditName").value.trim();
+  const status=$("memberEditStatus").value;
   if(!name){toast("請輸入姓名");return}
+  if(self&&newRole!=="admin"){toast("目前登入中的 ADMIN 不可把自己改成 MEMBER");return}
+
+  const permissionSelections=[...$("memberTripPermissionList").querySelectorAll("[data-trip-perm]")].map(sel=>({
+    tripId:sel.dataset.tripPerm,
+    permission:sel.value
+  }));
+
   try{
-    const patch={display_name:name,role:$("memberEditRole").value,account_status:$("memberEditStatus").value};
-    const {error:pe}=await supabaseClient.from("profiles").update(patch).eq("id",selectedAdminMember.id);
-    if(pe)throw pe;
-    const selects=[...$("memberTripPermissionList").querySelectorAll("[data-trip-perm]")];
-    for(const sel of selects){
-      const tripId=sel.dataset.tripPerm,permission=sel.value;
-      const existing=adminMemberPerms.find(x=>x.user_id===selectedAdminMember.id&&x.trip_id===tripId);
-      if(existing){
-        const {error}=await supabaseClient.from("trip_members").update({permission}).eq("user_id",selectedAdminMember.id).eq("trip_id",tripId);
-        if(error)throw error;
-      }else{
-        const {error}=await supabaseClient.from("trip_members").insert({user_id:selectedAdminMember.id,trip_id:tripId,permission});
-        if(error)throw error;
+    // ADMIN 不需要 trip_members。
+    if(newRole==="admin"){
+      const {error:pe}=await supabaseClient.from("profiles").update({
+        display_name:name,
+        role:"admin",
+        account_status:status
+      }).eq("id",userId);
+      if(pe)throw pe;
+
+      if(!self){
+        const {error:de}=await supabaseClient.from("trip_members").delete().eq("user_id",userId);
+        if(de)throw de;
+      }
+    }else{
+      // MEMBER 才需要每趟旅行的 EDITOR / VIEWER。
+      // 若由 ADMIN 降為 MEMBER，先改角色，再寫 trip_members；
+      // 若後面失敗，會嘗試把角色回復為 ADMIN，避免留下半套狀態。
+      let demotedFromAdmin=false;
+      if(oldRole==="admin"){
+        const {error:demoteError}=await supabaseClient.from("profiles").update({
+          display_name:name,
+          role:"member",
+          account_status:status
+        }).eq("id",userId);
+        if(demoteError)throw demoteError;
+        demotedFromAdmin=true;
+      }
+
+      try{
+        for(const item of permissionSelections){
+          const existing=adminMemberPerms.find(x=>x.user_id===userId&&x.trip_id===item.tripId);
+          if(existing){
+            const {error}=await supabaseClient.from("trip_members")
+              .update({permission:item.permission})
+              .eq("user_id",userId)
+              .eq("trip_id",item.tripId);
+            if(error)throw error;
+          }else{
+            const {error}=await supabaseClient.from("trip_members")
+              .insert({user_id:userId,trip_id:item.tripId,permission:item.permission});
+            if(error)throw error;
+          }
+        }
+
+        if(!demotedFromAdmin){
+          const {error:pe}=await supabaseClient.from("profiles").update({
+            display_name:name,
+            role:"member",
+            account_status:status
+          }).eq("id",userId);
+          if(pe)throw pe;
+        }
+      }catch(innerErr){
+        if(demotedFromAdmin){
+          await supabaseClient.from("profiles").update({
+            display_name:selectedAdminMember.display_name||name,
+            role:"admin",
+            account_status:selectedAdminMember.account_status||"active"
+          }).eq("id",userId);
+        }
+        throw innerErr;
       }
     }
-    toast("成員設定已儲存");closeMemberSettings();await refreshSupabaseAccountAndTrips();await loadAdminMembers();
-  }catch(e){toast("儲存失敗："+(e.message||String(e)))}
+
+    toast("成員設定已儲存");
+    closeMemberSettings();
+    await refreshSupabaseAccountAndTrips();
+    await loadAdminMembers();
+  }catch(e){
+    toast("儲存失敗："+(e.message||String(e)));
+  }
 }
 async function removeSelectedFamilyMember(){
   if(!selectedAdminMember||selectedAdminMember.id===supabaseSessionUser.id)return;
@@ -2273,6 +2350,6 @@ document.querySelectorAll(".navBtn").forEach(b=>b.onclick=()=>{
 })();
 </script>
 
-<script>console.info("Nita Travel 旅行v03 Integrated");</script>
+<script>console.info("Nita Travel 旅行v03.1 Member Permission Fix");</script>
 </body>
 </html>
