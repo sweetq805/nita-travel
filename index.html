@@ -2643,7 +2643,7 @@ const APP_CONFIG={
   supabasePublishableKey:"sb_publishable_f0ZgHjc1yjMva0ZzldT46Q_yC7LCt0i",
   // 若正式網站已把 Google Maps browser key 寫在這裡，會優先使用；
   // 留空時仍沿用目前裝置既有的 localStorage 設定，不會讓舊裝置突然失效。
-  googleMapsApiKey:"AIzaSyCoRIr2gEx8E5iRiok4TNU4w7zrP_BYmJ8"
+  googleMapsApiKey:""
 };
 // 保留舊裝置 localStorage 作為相容 fallback；正式 GitHub Pages 會優先使用 APP_CONFIG。
 const SUPABASE_URL_STORAGE_KEY="nitaSupabaseProjectUrl";
@@ -2727,8 +2727,16 @@ function renderCloudTrips(){
 }
 function loadCloudTripIntoApp(t,permission){
   mergeCloudTripIntoState(t,permission,supabaseTripDays[t.id]||[]);
-  state.currentTripId=t.id;state.currentDay="info";persistTrips();renderAll();
-  $("tripBox").open=false;toast("已載入雲端旅程："+(t.title||"未命名旅行"));void fullCloudHydrateCurrentTrip();
+  state.currentTripId=t.id;state.currentDay="info";activeMapFilter="all";
+  fullCloudHydrating=true;
+  currentTrip().markers=[];
+  fullCloudLoadedIds.map_places=fcMapLoadedSet(t.id);
+  try{clearGoogleMarkerSet(mainGoogleMarkers);clearGoogleMarkerSet(dayGoogleMarkers)}catch(_){}
+  persistTrips();renderAll();
+  $("tripBox").open=false;toast("已載入雲端旅程："+(t.title||"未命名旅行"));
+  void fullCloudHydrateCurrentTrip()
+    .catch(err=>console.warn("Cloud trip map hydrate failed",err))
+    .finally(()=>{fullCloudHydrating=false});
 }
 
 async function refreshSupabaseAccountAndTrips(){
@@ -2874,7 +2882,36 @@ function ensureDays(t){const n=daysInclusive(t.start,t.end);t.days=t.days||[];wh
 
 function renderAll(){if(!state.trips[state.currentTripId])state.currentTripId=Object.keys(state.trips)[0];const t=currentTrip();ensureDays(t);$("topTripName").textContent=`${t.flag||"✈️"} ${t.name}`;$("topTripDate").textContent=`${fmtSlash(t.start)} — ${fmtSlash(t.end)}`;$("startDateValue").value=t.start;$("endDateValue").value=t.end;$("startDateBtn").textContent=fmtZh(t.start);$("endDateBtn").textContent=fmtZh(t.end);$("newTripName").value=t.name;renderTripList();renderDayTabs();renderSchedulePage();renderBookings();renderMapPage();renderExpenses();renderJournal();renderPlanning();persistTrips();applyLoggedOutWriteLock()}
 
-function renderTripList(){const box=$("tripList");box.innerHTML="";Object.values(state.trips).filter(t=>!supabaseSessionUser||t.supabase).forEach(t=>{const row=document.createElement("div");row.className="tripItem"+(t.id===state.currentTripId?" active":"");const canDelete=t.supabase?isSupabaseAdmin():true;row.innerHTML=`<button class="tripPick" type="button"><span>${t.flag||"✈️"} ${escapeHtml(t.name)}</span><span>${t.start.slice(5).replace("-","/")}—${t.end.slice(5).replace("-","/")}</span></button>${canDelete?'<button class="deleteBtn" type="button">刪除</button>':''}`;row.querySelector(".tripPick").onclick=()=>{state.currentTripId=t.id;state.currentDay="info";renderAll();$("tripBox").open=false;if(t.supabase)void fullCloudHydrateCurrentTrip()};const del=row.querySelector(".deleteBtn");if(del)del.onclick=()=>deleteTrip(t.id);box.appendChild(row)})}
+function renderTripList(){
+  const box=$("tripList");box.innerHTML="";
+  Object.values(state.trips).filter(t=>!supabaseSessionUser||t.supabase).forEach(t=>{
+    const row=document.createElement("div");
+    row.className="tripItem"+(t.id===state.currentTripId?" active":"");
+    const canDelete=t.supabase?isSupabaseAdmin():true;
+    row.innerHTML=`<button class="tripPick" type="button"><span>${t.flag||"✈️"} ${escapeHtml(t.name)}</span><span>${t.start.slice(5).replace("-","/")}—${t.end.slice(5).replace("-","/")}</span></button>${canDelete?'<button class="deleteBtn" type="button">刪除</button>':''}`;
+    row.querySelector(".tripPick").onclick=()=>{
+      const targetId=t.id;
+      state.currentTripId=targetId;
+      state.currentDay="info";
+      activeMapFilter="all";
+      if(t.supabase){
+        fullCloudHydrating=true;
+        t.markers=[];
+        fullCloudLoadedIds.map_places=fcMapLoadedSet(targetId);
+        try{clearGoogleMarkerSet(mainGoogleMarkers);clearGoogleMarkerSet(dayGoogleMarkers)}catch(_){}
+      }
+      renderAll();
+      $("tripBox").open=false;
+      if(t.supabase){
+        void fullCloudHydrateCurrentTrip()
+          .catch(err=>console.warn("Trip map hydrate failed",err))
+          .finally(()=>{fullCloudHydrating=false});
+      }
+    };
+    const del=row.querySelector(".deleteBtn");if(del)del.onclick=()=>deleteTrip(t.id);
+    box.appendChild(row);
+  });
+}
 async function deleteTrip(id){
   const t=state.trips[id];
   if(t?.supabase){
@@ -3759,7 +3796,7 @@ function markerIconSvg(text){
 // ===== v20 Google Maps + Google Places + requested UI fixes =====
 // 重要：請只在你自己的本機 HTML 裡，把下方文字換成自己的 API Key。
 // 不要把完整 API Key 傳到聊天、截圖或公開網站。
-let GOOGLE_MAPS_API_KEY=String(APP_CONFIG.googleMapsApiKey||"").trim()||localStorage.getItem("nitaGoogleMapsApiKey")||"";
+let GOOGLE_MAPS_API_KEY=String(APP_CONFIG.googleMapsApiKey||"AIzaSyCoRIr2gEx8E5iRiok4TNU4w7zrP_BYmJ8").trim()||localStorage.getItem("nitaGoogleMapsApiKey")||"";
 
 let googleMap=null;
 let dayGoogleMap=null;
@@ -4224,6 +4261,19 @@ function openBookingForm(type){
 /* ===== v18 Full Cloud Integration batch layer ===== */
 let fullCloudHydrating=false;
 const fullCloudLoadedIds={bookings:new Set(),expenses:new Set(),collections:new Set(),preparation:new Set(),map_places:new Set(),shopping_items:new Set(),pocket_foods:new Set()};
+const fullCloudMapLoadedIdsByTrip=new Map();
+function fcMapLoadedSet(tripId){
+  const id=String(tripId||"");
+  if(!fullCloudMapLoadedIdsByTrip.has(id))fullCloudMapLoadedIdsByTrip.set(id,new Set());
+  return fullCloudMapLoadedIdsByTrip.get(id);
+}
+function fcSetMapLoadedIds(tripId,ids=[]){
+  const set=fcMapLoadedSet(tripId);
+  set.clear();
+  (ids||[]).filter(Boolean).forEach(id=>set.add(id));
+  if(currentTrip()?.id===tripId)fullCloudLoadedIds.map_places=set;
+  return set;
+}
 const fullCloudColumnCache={};
 const fullCloudSyncTimers={};
 async function fcHasCol(table,col){const k=table+':'+col;if(k in fullCloudColumnCache)return fullCloudColumnCache[k];try{const {error}=await supabaseClient.from(table).select(col).limit(1);return fullCloudColumnCache[k]=!error}catch(e){return fullCloudColumnCache[k]=false}}
@@ -4234,13 +4284,34 @@ function fcSchedule(key){if(fullCloudHydrating||!currentTrip()?.supabase||!supab
 const __fcOriginalSave=save;
 save=function(k,v){__fcOriginalSave(k,v);if(k==='travelBookingsV13')fcSchedule('bookings');else if(k==='travelExpensesV13')fcSchedule('expenses');else if(k==='travelJournalV13')fcSchedule('collections');else if(k==='travelPlanningV13')fcSchedule('preparation');else if(k==='travelTripsV13')fcSchedule('tripdata')};
 
-async function fcInsertOrUpdate(table,item,payload){
-  if(item._cloudId){const {error}=await supabaseClient.from(table).update(payload).eq('id',item._cloudId);if(error)throw error;return item._cloudId}
-  const {data,error}=await supabaseClient.from(table).insert({trip_id:currentTrip().id,...payload}).select('id,created_by').single();if(error)throw error;item._cloudId=data.id;item._createdBy=data.created_by||supabaseSessionUser.id;return data.id;
+async function fcInsertOrUpdate(table,item,payload,fixedTripId=""){
+  const tripId=fixedTripId||currentTrip()?.id;
+  if(!tripId)throw new Error("找不到目前行程");
+  if(item._cloudId){
+    let query=supabaseClient.from(table).update(payload).eq('id',item._cloudId);
+    if(fixedTripId)query=query.eq('trip_id',tripId);
+    const {error}=await query;
+    if(error)throw error;
+    return item._cloudId;
+  }
+  const {data,error}=await supabaseClient.from(table).insert({trip_id:tripId,...payload}).select('id,created_by').single();
+  if(error)throw error;
+  item._cloudId=data.id;item._createdBy=data.created_by||supabaseSessionUser.id;
+  return data.id;
 }
-async function fcDeleteMissing(table,loadedSet,currentItems){
+async function fcDeleteMissing(table,loadedSet,currentItems,fixedTripId=""){
   const keep=new Set(currentItems.map(x=>x._cloudId).filter(Boolean));
-  for(const id of [...loadedSet]){if(keep.has(id))continue;const {data}=await supabaseClient.from(table).select('id,trip_id,created_by').eq('id',id).maybeSingle();if(data&&fcCanDelete(data)){const {error}=await supabaseClient.from(table).delete().eq('id',id);if(!error)loadedSet.delete(id)}}
+  for(const id of [...loadedSet]){
+    if(keep.has(id))continue;
+    let lookup=supabaseClient.from(table).select('id,trip_id,created_by').eq('id',id);
+    if(fixedTripId)lookup=lookup.eq('trip_id',fixedTripId);
+    const {data}=await lookup.maybeSingle();
+    if(!data||!fcCanDelete(data))continue;
+    let removal=supabaseClient.from(table).delete().eq('id',id);
+    if(fixedTripId)removal=removal.eq('trip_id',fixedTripId);
+    const {error}=await removal;
+    if(!error)loadedSet.delete(id);
+  }
 }
 async function fcSyncBookings(){if(!fcCanEdit())return;const type=await fcFirstCol('bookings',['booking_type','type','category']),title=await fcFirstCol('bookings',['title','name','booking_name']),details=await fcFirstCol('bookings',['details','detail','description','notes']);for(const x of state.bookings){const p={};if(type)p[type]=x.type||'';if(title)p[title]=x.title||'';if(details)p[details]=x.detail||'';await fcInsertOrUpdate('bookings',x,p);fullCloudLoadedIds.bookings.add(x._cloudId)}await fcDeleteMissing('bookings',fullCloudLoadedIds.bookings,state.bookings)}
 async function fcSyncExpenses(){
@@ -4275,7 +4346,31 @@ async function fcSyncExpenses(){
 }
 async function fcSyncCollections(){if(!fcCanEdit())return;const url=await fcFirstCol('collections',['url','link','source_url']),type=await fcFirstCol('collections',['type','category']),note=await fcFirstCol('collections',['note','notes','description','caption']);for(const x of state.journal){const p={};if(url)p[url]=x.url||'';if(type)p[type]=x.type||'';if(note)p[note]=x.note||'';await fcInsertOrUpdate('collections',x,p);fullCloudLoadedIds.collections.add(x._cloudId)}await fcDeleteMissing('collections',fullCloudLoadedIds.collections,state.journal)}
 async function fcSyncPreparation(){if(!fcCanEdit())return;const cat=await fcFirstCol('preparation_items',['category','type']),text=await fcFirstCol('preparation_items',['item_text','text','title','name','item_name']),checked=await fcFirstCol('preparation_items',['checked','is_done','done','completed']),assignee=await fcFirstCol('preparation_items',['assignee','quantity','qty','note']);if(!text)return;const flat=[];for(const [k,arr] of Object.entries(state.planning))if(Array.isArray(arr))for(const x of arr)flat.push({x,k});for(const {x,k} of flat){const p={};if(cat)p[cat]=k;if(text)p[text]=x.text||'';if(checked)p[checked]=!!x.selected;if(assignee)p[assignee]=x.assignee||'';await fcInsertOrUpdate('preparation_items',x,p);fullCloudLoadedIds.preparation.add(x._cloudId)}await fcDeleteMissing('preparation_items',fullCloudLoadedIds.preparation,flat.map(z=>z.x))}
-async function fcSyncMap(){if(!fcCanEdit())return;const t=currentTrip();const name=await fcFirstCol('map_places',['place_name','name','title']),address=await fcFirstCol('map_places',['address','formatted_address']),lat=await fcFirstCol('map_places',['latitude','lat']),lng=await fcFirstCol('map_places',['longitude','lng','lon']),pid=await fcFirstCol('map_places',['google_place_id','place_id']),cat=await fcFirstCol('map_places',['category','type']);for(const x of t.markers){if(typeof x==='string')continue;const p={};if(name)p[name]=x.name||'';if(address)p[address]=x.address||'';if(lat)p[lat]=Number.isFinite(x.lat)?x.lat:null;if(lng)p[lng]=Number.isFinite(x.lng)?x.lng:null;if(pid)p[pid]=x.placeId||'';if(cat)p[cat]=x.category||'📍 地標';await fcInsertOrUpdate('map_places',x,p);fullCloudLoadedIds.map_places.add(x._cloudId)}await fcDeleteMissing('map_places',fullCloudLoadedIds.map_places,t.markers.filter(x=>typeof x!=='string'))}
+async function fcSyncMap(){
+  const t=currentTrip(),tripId=t?.id;
+  if(!tripId||!t?.supabase||!supabaseSessionUser||!cloudCanEditTrip(tripId))return;
+  const name=await fcFirstCol('map_places',['place_name','name','title']),
+        address=await fcFirstCol('map_places',['address','formatted_address']),
+        lat=await fcFirstCol('map_places',['latitude','lat']),
+        lng=await fcFirstCol('map_places',['longitude','lng','lon']),
+        pid=await fcFirstCol('map_places',['google_place_id','place_id']),
+        cat=await fcFirstCol('map_places',['category','type']);
+  const markers=(t.markers||[]).filter(x=>typeof x!=='string');
+  const loaded=fcMapLoadedSet(tripId);
+  for(const x of markers){
+    const p={};
+    if(name)p[name]=x.name||'';
+    if(address)p[address]=x.address||'';
+    if(lat)p[lat]=Number.isFinite(x.lat)?x.lat:null;
+    if(lng)p[lng]=Number.isFinite(x.lng)?x.lng:null;
+    if(pid)p[pid]=x.placeId||'';
+    if(cat)p[cat]=x.category||'📍 地標';
+    await fcInsertOrUpdate('map_places',x,p,tripId);
+    loaded.add(x._cloudId);
+  }
+  await fcDeleteMissing('map_places',loaded,markers,tripId);
+  if(currentTrip()?.id===tripId)fullCloudLoadedIds.map_places=loaded;
+}
 async function fcUploadGalleryPhoto(table,row,item,kind){
   if(!item.photo||!String(item.photo).startsWith('data:image/'))return;
   const blob=await (await fetch(item.photo)).blob();const ext=(blob.type.split('/')[1]||'jpg').replace('jpeg','jpg');const path=`${currentTrip().id}/${supabaseSessionUser.id}/${kind}-${row.id}-${Date.now()}.${ext}`;
@@ -4380,7 +4475,7 @@ async function fullCloudHydrateCurrentTrip(){const t=currentTrip();if(!t?.supaba
       fullCloudLoadedIds.preparation=new Set((p.data||[]).map(r=>r.id));
     }
   }
-  if(!m.error){const name=await fcFirstCol('map_places',['place_name','name','title']),address=await fcFirstCol('map_places',['address','formatted_address']),lat=await fcFirstCol('map_places',['latitude','lat']),lng=await fcFirstCol('map_places',['longitude','lng','lon']),pid=await fcFirstCol('map_places',['google_place_id','place_id']),cat=await fcFirstCol('map_places',['category','type']);t.markers=(m.data||[]).map(r=>({_cloudId:r.id,_createdBy:r.created_by,name:r[name]||'未命名地標',address:address?(r[address]||''):'',lat:Number(r[lat]),lng:Number(r[lng]),placeId:pid?(r[pid]||''):'',category:cat?(r[cat]||'📍 地標'):'📍 地標'}));fullCloudLoadedIds.map_places=new Set((m.data||[]).map(r=>r.id))}
+  if(!m.error){const name=await fcFirstCol('map_places',['place_name','name','title']),address=await fcFirstCol('map_places',['address','formatted_address']),lat=await fcFirstCol('map_places',['latitude','lat']),lng=await fcFirstCol('map_places',['longitude','lng','lon']),pid=await fcFirstCol('map_places',['google_place_id','place_id']),cat=await fcFirstCol('map_places',['category','type']);t.markers=(m.data||[]).map(r=>({_cloudId:r.id,_createdBy:r.created_by,name:r[name]||'未命名地標',address:address?(r[address]||''):'',lat:Number(r[lat]),lng:Number(r[lng]),placeId:pid?(r[pid]||''):'',category:cat?(r[cat]||'📍 地標'):'📍 地標'}));fcSetMapLoadedIds(t.id,(m.data||[]).map(r=>r.id))}
   for(const [res,table,field,kind] of [[s,'shopping_items','shopping','shopping'],[f,'pocket_foods','pocketFood','food']])if(!res.error){const notes=await fcFirstCol(table,['notes','note','description','caption']);const rows=res.data||[];const assets=await fcLoadAttachments(rows.map(r=>r.id),[kind+'_photo']);t.days.forEach(d=>d[field]=[]);for(const r of rows){const d=t.days.find(x=>x.supabaseDayId===r.trip_day_id);if(!d)continue;const a=(assets[r.id]||[])[0];d[field].push({_cloudId:r.id,_createdBy:r.created_by,_attachmentId:a?.id,_storagePath:a?.file_path,_uploadedBy:a?.uploaded_by,photo:a?.signedUrl||'',name:(a?.caption||r[notes]||'')})}fullCloudLoadedIds[table]=new Set(rows.map(r=>r.id))}
   __fcOriginalSave('travelBookingsV13',state.bookings);__fcOriginalSave('travelExpensesV13',state.expenses);__fcOriginalSave('travelJournalV13',state.journal);__fcOriginalSave('travelPlanningV13',state.planning);__fcOriginalSave('travelTripsV13',state.trips);renderAll();toast('雲端資料已同步載入');
 }finally{fullCloudHydrating=false}}
@@ -6965,17 +7060,21 @@ renderMapPage=function(){
 };
 
 async function v10HydrateMap(){
-  if(!v10CurrentTripCloud())return;
+  const tripAtStart=currentTrip();
+  const tripId=tripAtStart?.id;
+  if(!tripId||!tripAtStart?.supabase||!supabaseSessionUser||!supabaseClient)return;
   const name=await fcFirstCol("map_places",["place_name","name","title"]),
         address=await fcFirstCol("map_places",["address","formatted_address"]),
         lat=await fcFirstCol("map_places",["latitude","lat"]),
         lng=await fcFirstCol("map_places",["longitude","lng","lon"]),
         pid=await fcFirstCol("map_places",["google_place_id","place_id"]),
         cat=await fcFirstCol("map_places",["category","type"]);
-  const {data,error}=await supabaseClient.from("map_places").select("*").eq("trip_id",currentTrip().id);
+  const {data,error}=await supabaseClient.from("map_places").select("*").eq("trip_id",tripId);
   if(error)return;
-  currentTrip().markers=(data||[]).map(r=>({_cloudId:r.id,_createdBy:r.created_by,name:r[name]||"未命名地標",address:address?(r[address]||""):"",lat:Number(r[lat]),lng:Number(r[lng]),placeId:pid?(r[pid]||""):"",category:cat?(r[cat]||"📍 地標"):"📍 地標"}));
-  fullCloudLoadedIds.map_places=new Set((data||[]).map(x=>x.id));
+  const targetTrip=state.trips?.[tripId];
+  if(!targetTrip)return;
+  targetTrip.markers=(data||[]).map(r=>({_cloudId:r.id,_createdBy:r.created_by,name:r[name]||"未命名地標",address:address?(r[address]||""):"",lat:Number(r[lat]),lng:Number(r[lng]),placeId:pid?(r[pid]||""):"",category:cat?(r[cat]||"📍 地標"):"📍 地標"}));
+  fcSetMapLoadedIds(tripId,(data||[]).map(x=>x.id));
   __fcOriginalSave("travelTripsV13",state.trips);
 }
 
@@ -7269,6 +7368,7 @@ fullCloudHydrateCurrentTrip=async function(){
   };
 
   await __v10FullHydrate();
+  if(!localSnapshot.tripId||currentTrip()?.id!==localSnapshot.tripId)return;
   if(!v10CurrentTripCloud())return;
 
   fullCloudHydrating=true;
@@ -7302,11 +7402,8 @@ fullCloudHydrateCurrentTrip=async function(){
       await fcSyncPreparation();
       await v10HydratePrep();
     }
-    if(!(currentTrip().markers||[]).length && localSnapshot.markers.length){
-      currentTrip().markers=localSnapshot.markers;
-      await fcSyncMap();
-      await v10HydrateMap();
-    }
+    // Map markers are never auto-migrated between local and cloud trips.
+    // A cloud trip with no map_places rows must remain empty.
   }
 
   __fcOriginalSave("travelTripsV13",state.trips);
@@ -7316,6 +7413,24 @@ fullCloudHydrateCurrentTrip=async function(){
   renderPlanning();renderJournal();renderExpenses();renderMapPage();
   if(state.currentDay==="info"){renderFlight();renderQR()}
 };
+
+/* A newly created cloud trip owns an empty marker collection. */
+const __v31AddTripHandler=$("addTripBtn")?.onclick;
+if(__v31AddTripHandler){
+  $("addTripBtn").onclick=async function(event){
+    const tripIdsBefore=new Set(Object.keys(state.trips||{}));
+    await __v31AddTripHandler.call(this,event);
+    const freshTrip=currentTrip();
+    if(!freshTrip?.supabase||tripIdsBefore.has(freshTrip.id))return;
+    clearTimeout(fullCloudSyncTimers.tripdata);
+    freshTrip.markers=[];
+    fcSetMapLoadedIds(freshTrip.id,[]);
+    activeMapFilter="all";
+    try{clearGoogleMarkerSet(mainGoogleMarkers);clearGoogleMarkerSet(dayGoogleMarkers)}catch(_){}
+    __fcOriginalSave("travelTripsV13",state.trips);
+    renderMapPage();
+  };
+}
 
 /* When opening cloud-sensitive pages, fetch latest once to avoid stale local state */
 document.querySelectorAll(".navBtn").forEach(btn=>{
@@ -7860,6 +7975,7 @@ renderFlight=function(){
 
 /* 2. Map — remove grey box before nav */
 let v13MapFilter="all";
+let v13MapFilterTripId="";
 function v13MarkerKey(m){
   if(m?._cloudId)return "id:"+m._cloudId;
   if(m?.placeId)return "place:"+m.placeId;
@@ -7873,11 +7989,12 @@ function v13UniqueMarkers(){
   return out;
 }
 async function v13DeleteMarker(m){
+  const tripId=currentTrip()?.id;
   if(m._cloudId&&v13Cloud()){
-    const {data,error}=await supabaseClient.from("map_places").delete().eq("id",m._cloudId).select("id");
+    const {data,error}=await supabaseClient.from("map_places").delete().eq("id",m._cloudId).eq("trip_id",tripId).select("id");
     if(error){toast("地標刪除失敗："+error.message);return}
     if(!data?.length){toast("這筆地標目前沒有刪除權限");return}
-    try{fullCloudLoadedIds.map_places.delete(m._cloudId)}catch(_){}
+    try{fcMapLoadedSet(tripId).delete(m._cloudId);fullCloudLoadedIds.map_places.delete(m._cloudId)}catch(_){}
   }
   const key=v13MarkerKey(m);
   currentTrip().markers=(currentTrip().markers||[]).filter(x=>v13MarkerKey(x)!==key);
@@ -7912,8 +8029,26 @@ function v13RenderMarkerList(){
   });
 }
 
+function v13ApplyMapFilter(value,fit=true){
+  const selected=value&&value!=="all"?normalizeCategoryValue(value):"all";
+  v13MapFilter=selected;
+  activeMapFilter=selected;
+  document.querySelectorAll(".mapSavedFilterBar [data-cat]").forEach(btn=>btn.classList.toggle("active",btn.dataset.cat===selected));
+  document.querySelectorAll("#mapFilterBar .filterBtn").forEach(btn=>btn.classList.toggle("active",(btn.dataset.key||"all")===selected));
+  refreshGoogleMarkers(fit);
+  v13RenderMarkerList();
+}
+
 const v13BaseRenderMapPage=renderMapPage;
 renderMapPage=function(){
+  const tripId=currentTrip()?.id||"";
+  if(v13MapFilterTripId!==tripId){
+    v13MapFilterTripId=tripId;
+    v13MapFilter="all";
+    activeMapFilter="all";
+  }else{
+    activeMapFilter=v13MapFilter;
+  }
   try{v13BaseRenderMapPage()}catch(err){console.warn("legacy map render skipped",err)}
   const list=$("markerList");if(!list)return;
   document.querySelectorAll(".mapSavedFilterBar").forEach(x=>x.remove());
@@ -7926,8 +8061,14 @@ renderMapPage=function(){
     b.onclick=e=>{
       e.preventDefault();
       e.stopPropagation();
-      v13MapFilter=b.dataset.cat||"all";
-      renderMapPage();
+      v13ApplyMapFilter(b.dataset.cat||"all",true);
+    };
+  });
+  document.querySelectorAll("#mapFilterBar .filterBtn").forEach(b=>{
+    b.onclick=e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      v13ApplyMapFilter(b.dataset.key||"all",true);
     };
   });
   v13RenderMarkerList();
