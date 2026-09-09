@@ -11020,5 +11020,206 @@ console.info("FINAL v25 rebuilt expense module loaded");
 })();
 </script>
 
+<!-- ===== FINAL v32：收藏文字與照片強制寫入 Supabase，依行程隔離 ===== -->
+<script>
+(()=>{
+"use strict";
+
+const v32CollectionLoadedByTrip=new Map();
+function v32CollectionLoadedSet(tripId){
+  if(!v32CollectionLoadedByTrip.has(tripId))v32CollectionLoadedByTrip.set(tripId,new Set());
+  return v32CollectionLoadedByTrip.get(tripId);
+}
+
+async function v32CollectionCols(){
+  return {
+    title:await fcFirstCol("collections",["title","name","item_name"]),
+    url:await fcFirstCol("collections",["url","link","source_url"]),
+    type:await fcFirstCol("collections",["type","category"]),
+    note:await fcFirstCol("collections",["notes","note","description","caption"])
+  };
+}
+
+async function v32LoadCollectionAssets(tripId,parentIds){
+  const map={};
+  parentIds.forEach(id=>map[id]=[]);
+  if(!parentIds.length)return map;
+  const {data,error}=await supabaseClient.from("attachments")
+    .select("id,parent_id,file_path,uploaded_by,attachment_type")
+    .eq("trip_id",tripId)
+    .eq("attachment_type","collection_photo")
+    .in("parent_id",parentIds);
+  if(error)throw error;
+  for(const a of data||[]){
+    const signed=await supabaseClient.storage.from("travel-images").createSignedUrl(a.file_path,3600);
+    if(signed.error)throw signed.error;
+    (map[a.parent_id]||(map[a.parent_id]=[])).push({...a,signedUrl:signed.data?.signedUrl||""});
+  }
+  return map;
+}
+
+v10HydrateCollections=async function(){
+  const trip=currentTrip(),tripId=trip?.id;
+  if(!tripId||!trip?.supabase||!supabaseSessionUser||!supabaseClient)return;
+  try{
+    const cols=await v32CollectionCols();
+    const {data,error}=await supabaseClient.from("collections").select("*").eq("trip_id",tripId);
+    if(error)throw error;
+    const rows=data||[];
+    const assets=await v32LoadCollectionAssets(tripId,rows.map(x=>x.id));
+    const journal=rows.map(r=>{
+      const rawNote=cols.note?(r[cols.note]||""):"";
+      const fallbackTitle=(cols.title?(r[cols.title]||""):"")||(cols.type?(r[cols.type]||""):"")||"必買";
+      const meta=v10ParseCollectionMeta(rawNote,{
+        title:fallbackTitle,
+        category:(cols.type?(r[cols.type]||""):"")||"生活雜貨",
+        purchased:false,
+        note:rawNote
+      });
+      const pa=assets[r.id]||[];
+      return {
+        _cloudId:r.id,
+        _createdBy:r.created_by,
+        title:meta.title||fallbackTitle,
+        category:meta.category||((cols.type&&r[cols.type])||"生活雜貨"),
+        type:meta.category||((cols.type&&r[cols.type])||"生活雜貨"),
+        purchased:!!meta.purchased,
+        note:meta.note||"",
+        url:cols.url?(r[cols.url]||""):"",
+        images:pa.map(x=>x.signedUrl).filter(Boolean),
+        _photoAssets:pa
+      };
+    });
+    if(currentTrip()?.id!==tripId)return;
+    state.journal=journal;
+    const loaded=v32CollectionLoadedSet(tripId);
+    loaded.clear();rows.forEach(r=>loaded.add(r.id));
+    fullCloudLoadedIds.collections=new Set(loaded);
+    __fcOriginalSave("travelJournalV13",state.journal);
+  }catch(err){
+    console.error("收藏雲端載入失敗",err);
+    toast("收藏雲端載入失敗，已保留目前畫面資料");
+  }
+};
+
+async function v32UploadCollectionPhoto(tripId,item,dataUrl){
+  const blob=await (await fetch(dataUrl)).blob();
+  const ext=(blob.type.split("/")[1]||"jpg").replace("jpeg","jpg");
+  const path=`${tripId}/${supabaseSessionUser.id}/collection-${item._cloudId}-${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+  const up=await supabaseClient.storage.from("travel-images")
+    .upload(path,blob,{contentType:blob.type||"image/jpeg",upsert:false});
+  if(up.error)throw up.error;
+  const {data,error}=await supabaseClient.from("attachments").insert({
+    trip_id:tripId,
+    attachment_type:"collection_photo",
+    parent_id:item._cloudId,
+    file_path:path,
+    file_name:path.split("/").pop(),
+    mime_type:blob.type||"image/jpeg",
+    caption:item.title||""
+  }).select("id,parent_id,file_path,uploaded_by,attachment_type").single();
+  if(error){
+    await supabaseClient.storage.from("travel-images").remove([path]);
+    throw error;
+  }
+  const signed=await supabaseClient.storage.from("travel-images").createSignedUrl(path,3600);
+  if(signed.error){
+    await supabaseClient.from("attachments").delete().eq("id",data.id).eq("trip_id",tripId);
+    await supabaseClient.storage.from("travel-images").remove([path]);
+    throw signed.error;
+  }
+  return {...data,signedUrl:signed.data?.signedUrl||""};
+}
+
+v16SaveBuyCloud=async function(item,photos){
+  const trip=currentTrip(),tripId=trip?.id;
+  if(!tripId||!trip?.supabase||!supabaseSessionUser||!supabaseClient)throw new Error("尚未連上收藏雲端");
+  if(!cloudCanEditTrip(tripId))throw new Error("目前帳號沒有這個行程的編輯權限");
+
+  const wasNew=!item._cloudId;
+  const cols=await v32CollectionCols();
+  const category=item.category||item.type||"生活雜貨";
+  const payload={};
+  if(cols.title)payload[cols.title]=item.title||"必買";
+  if(cols.url)payload[cols.url]=item.url||"";
+  if(cols.type)payload[cols.type]=category;
+  if(cols.note)payload[cols.note]="__NITA_BUY_V2__"+JSON.stringify({
+    title:item.title||"必買",category,purchased:!!item.purchased,note:item.note||""
+  });
+  if(!cols.title&&!cols.note)throw new Error("collections 缺少 title 或 notes 欄位");
+
+  let row;
+  if(wasNew){
+    const inserted=await supabaseClient.from("collections")
+      .insert({trip_id:tripId,...payload}).select("*").single();
+    if(inserted.error)throw inserted.error;
+    row=inserted.data;item._cloudId=row.id;item._createdBy=row.created_by;
+  }else{
+    const updated=await supabaseClient.from("collections")
+      .update(payload).eq("id",item._cloudId).eq("trip_id",tripId).select("*").single();
+    if(updated.error)throw updated.error;
+    row=updated.data;
+  }
+  if(!row?.id)throw new Error("收藏文字沒有成功寫入 Supabase");
+
+  const oldAssets=[...(item._photoAssets||[])];
+  const remotePhotos=photos.filter(x=>!String(x).startsWith("data:image/"));
+  const keepRemote=new Set(remotePhotos);
+  const keptAssets=oldAssets.filter(a=>keepRemote.has(a.signedUrl));
+  const dataUrls=photos.filter(x=>String(x).startsWith("data:image/"));
+  const uploaded=[];
+  try{
+    for(const dataUrl of dataUrls)uploaded.push(await v32UploadCollectionPhoto(tripId,item,dataUrl));
+  }catch(err){
+    for(const a of uploaded){
+      await supabaseClient.from("attachments").delete().eq("id",a.id).eq("trip_id",tripId);
+      await supabaseClient.storage.from("travel-images").remove([a.file_path]);
+    }
+    if(wasNew){
+      await supabaseClient.from("collections").delete().eq("id",item._cloudId).eq("trip_id",tripId);
+      item._cloudId=undefined;
+    }
+    throw err;
+  }
+
+  const removed=oldAssets.filter(a=>!keepRemote.has(a.signedUrl));
+  for(const a of removed){
+    const del=await supabaseClient.from("attachments").delete().eq("id",a.id).eq("trip_id",tripId).select("id");
+    if(del.error)throw del.error;
+    await supabaseClient.storage.from("travel-images").remove([a.file_path]);
+  }
+
+  item._photoAssets=[...keptAssets,...uploaded];
+  let uploadIndex=0;
+  item.images=photos.map(x=>String(x).startsWith("data:image/")?(uploaded[uploadIndex++]?.signedUrl||""):x).filter(Boolean);
+
+  const check=await supabaseClient.from("collections").select("id").eq("id",item._cloudId).eq("trip_id",tripId).single();
+  if(check.error||!check.data?.id)throw check.error||new Error("收藏雲端驗證失敗");
+  v32CollectionLoadedSet(tripId).add(item._cloudId);
+  fullCloudLoadedIds.collections=new Set(v32CollectionLoadedSet(tripId));
+};
+
+fcSyncCollections=async function(){
+  const trip=currentTrip(),tripId=trip?.id;
+  if(!tripId||!trip?.supabase||!supabaseSessionUser||!supabaseClient||!cloudCanEditTrip(tripId))return;
+  const items=[...(state.journal||[])];
+  for(const item of items){
+    if(currentTrip()?.id!==tripId)return;
+    await v16SaveBuyCloud(item,item.images||[]);
+  }
+  const currentIds=new Set(items.map(x=>x._cloudId).filter(Boolean));
+  for(const id of [...v32CollectionLoadedSet(tripId)]){
+    if(currentIds.has(id))continue;
+    const {error}=await supabaseClient.from("collections").delete().eq("id",id).eq("trip_id",tripId);
+    if(error)throw error;
+    v32CollectionLoadedSet(tripId).delete(id);
+  }
+  if(currentTrip()?.id===tripId)__fcOriginalSave("travelJournalV13",state.journal);
+};
+
+console.info("FINAL v32 collection cloud persistence loaded");
+})();
+</script>
+
 </body>
 </html>
