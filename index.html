@@ -513,10 +513,11 @@ body.loggedOutMode #adminMembers,
 .cleanEditForm .editPhotoGrid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-top:8px}
 .backupSummary{display:grid;gap:7px;padding:9px 0 2px}
 .backupSummary.hidden{display:none}
-.backupSummaryItem{display:grid;grid-template-columns:48px minmax(0,1fr);gap:9px;align-items:center;background:#F5F0EB;border-radius:13px;padding:7px 9px}
+.backupSummaryItem{display:grid;grid-template-columns:48px minmax(0,1fr) auto;gap:9px;align-items:center;background:#F5F0EB;border-radius:13px;padding:7px 9px}
 .backupSummaryItem.noPhoto{grid-template-columns:1fr}
 .backupSummaryThumb{width:48px;height:48px;border-radius:10px;object-fit:cover;background:#EDE5DF}
 .backupSummaryName{font-size:12px;font-weight:700;color:#59524C;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.backupSummaryText{min-width:0}.backupSummaryDesc{font-size:11px;color:#8A817A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:2px}
 .prepareToolbar,.collectionToolbar{display:flex;justify-content:flex-end;margin-bottom:10px}
 .prepareList{display:grid;gap:9px}
 .prepareItem{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;background:#FFFDFB;border:1px solid #EBE0D9;border-radius:16px;padding:12px;box-shadow:0 7px 17px rgba(91,75,65,.06)}
@@ -2643,7 +2644,7 @@ const APP_CONFIG={
   supabasePublishableKey:"sb_publishable_f0ZgHjc1yjMva0ZzldT46Q_yC7LCt0i",
   // 若正式網站已把 Google Maps browser key 寫在這裡，會優先使用；
   // 留空時仍沿用目前裝置既有的 localStorage 設定，不會讓舊裝置突然失效。
-  googleMapsApiKey:""
+  googleMapsApiKey:"AIzaSyCoRIr2gEx8E5iRiok4TNU4w7zrP_BYmJ8"
 };
 // 保留舊裝置 localStorage 作為相容 fallback；正式 GitHub Pages 會優先使用 APP_CONFIG。
 const SUPABASE_URL_STORAGE_KEY="nitaSupabaseProjectUrl";
@@ -3796,7 +3797,7 @@ function markerIconSvg(text){
 // ===== v20 Google Maps + Google Places + requested UI fixes =====
 // 重要：請只在你自己的本機 HTML 裡，把下方文字換成自己的 API Key。
 // 不要把完整 API Key 傳到聊天、截圖或公開網站。
-let GOOGLE_MAPS_API_KEY=String(APP_CONFIG.googleMapsApiKey||"AIzaSyCoRIr2gEx8E5iRiok4TNU4w7zrP_BYmJ8").trim()||localStorage.getItem("nitaGoogleMapsApiKey")||"";
+let GOOGLE_MAPS_API_KEY=String(APP_CONFIG.googleMapsApiKey||"").trim()||localStorage.getItem("nitaGoogleMapsApiKey")||"";
 
 let googleMap=null;
 let dayGoogleMap=null;
@@ -4313,7 +4314,68 @@ async function fcDeleteMissing(table,loadedSet,currentItems,fixedTripId=""){
     if(!error)loadedSet.delete(id);
   }
 }
-async function fcSyncBookings(){if(!fcCanEdit())return;const type=await fcFirstCol('bookings',['booking_type','type','category']),title=await fcFirstCol('bookings',['title','name','booking_name']),details=await fcFirstCol('bookings',['details','detail','description','notes']);for(const x of state.bookings){const p={};if(type)p[type]=x.type||'';if(title)p[title]=x.title||'';if(details)p[details]=x.detail||'';await fcInsertOrUpdate('bookings',x,p);fullCloudLoadedIds.bookings.add(x._cloudId)}await fcDeleteMissing('bookings',fullCloudLoadedIds.bookings,state.bookings)}
+const V34_BOOK_MARK='__NITA_BOOKING_V34__:';
+let v34BookingSyncQueue=Promise.resolve();
+function v34BookingClientId(item){
+  if(!item._clientId)item._clientId=(crypto?.randomUUID?.()||('bk-'+Date.now()+'-'+Math.random().toString(36).slice(2)));
+  return item._clientId;
+}
+function v34BookingStoredDetail(item){
+  return V34_BOOK_MARK+JSON.stringify({clientId:v34BookingClientId(item),detail:item.detail||''});
+}
+function v34BookingReadDetail(raw){
+  raw=String(raw||'');
+  if(!raw.startsWith(V34_BOOK_MARK))return {detail:raw,clientId:''};
+  try{const x=JSON.parse(raw.slice(V34_BOOK_MARK.length));return {detail:x.detail||'',clientId:x.clientId||''}}catch(_){return {detail:raw,clientId:''}}
+}
+async function v34UploadBookingPhoto(item,dataUrl){
+  const blob=await (await fetch(dataUrl)).blob();
+  const ext=(blob.type.split('/')[1]||'jpg').replace('jpeg','jpg');
+  const path=`${currentTrip().id}/${supabaseSessionUser.id}/booking-${item._cloudId}-${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+  const up=await supabaseClient.storage.from('travel-images').upload(path,blob,{contentType:blob.type||'image/jpeg',upsert:false});
+  if(up.error)throw up.error;
+  const {data:a,error}=await supabaseClient.from('attachments').insert({trip_id:currentTrip().id,attachment_type:'booking_photo',parent_id:item._cloudId,file_path:path,file_name:path.split('/').pop(),mime_type:blob.type||'image/jpeg',caption:item.title||''}).select('id,parent_id,file_path,uploaded_by,attachment_type').single();
+  if(error){await supabaseClient.storage.from('travel-images').remove([path]);throw error}
+  const signed=await supabaseClient.storage.from('travel-images').createSignedUrl(path,3600);
+  return {...a,signedUrl:signed.error?'':(signed.data?.signedUrl||'')};
+}
+async function v34SyncBookingPhotos(item){
+  item.images=Array.isArray(item.images)?item.images:[];
+  item._photoAssets=Array.isArray(item._photoAssets)?item._photoAssets:[];
+  const remote=new Set(item.images.filter(x=>!String(x).startsWith('data:image/')));
+  const removed=item._photoAssets.filter(a=>!remote.has(a.signedUrl));
+  for(const a of removed){
+    const del=await supabaseClient.from('attachments').delete().eq('id',a.id).select('id');
+    if(!del.error&&del.data?.length&&a.file_path)await supabaseClient.storage.from('travel-images').remove([a.file_path]);
+  }
+  const kept=item._photoAssets.filter(a=>remote.has(a.signedUrl));
+  const pending=item.images.filter(x=>String(x).startsWith('data:image/'));
+  const uploaded=[];
+  for(const dataUrl of pending)uploaded.push(await v34UploadBookingPhoto(item,dataUrl));
+  item._photoAssets=[...kept,...uploaded];
+  let i=0;
+  item.images=item.images.map(x=>String(x).startsWith('data:image/')?(uploaded[i++]?.signedUrl||''):x).filter(Boolean);
+}
+async function v34SyncBookingsNow(){
+  if(!fcCanEdit())return;
+  const type=await fcFirstCol('bookings',['booking_type','type','category']),title=await fcFirstCol('bookings',['title','name','booking_name']),details=await fcFirstCol('bookings',['details','detail','description','notes']);
+  for(const x of state.bookings){
+    const p={};if(type)p[type]=x.type||'';if(title)p[title]=x.title||'';if(details)p[details]=v34BookingStoredDetail(x);
+    if(!x._cloudId&&details){
+      const {data:found}=await supabaseClient.from('bookings').select('id,created_by').eq('trip_id',currentTrip().id).eq(details,p[details]).maybeSingle();
+      if(found){x._cloudId=found.id;x._createdBy=found.created_by||supabaseSessionUser.id}
+    }
+    await fcInsertOrUpdate('bookings',x,p);
+    fullCloudLoadedIds.bookings.add(x._cloudId);
+    await v34SyncBookingPhotos(x);
+  }
+  await fcDeleteMissing('bookings',fullCloudLoadedIds.bookings,state.bookings);
+  __fcOriginalSave('travelBookingsV13',state.bookings);
+}
+function fcSyncBookings(){
+  v34BookingSyncQueue=v34BookingSyncQueue.then(v34SyncBookingsNow,v34SyncBookingsNow);
+  return v34BookingSyncQueue;
+}
 async function fcSyncExpenses(){
   if(!fcCanEdit())return;
   const title=await fcFirstCol('expenses',['title','name','expense_title']);
@@ -4387,7 +4449,16 @@ async function fcLoadAttachments(parentIds,types){const map={};parentIds.forEach
 async function fullCloudHydrateCurrentTrip(){const t=currentTrip();if(!t?.supabase||!supabaseClient||!supabaseSessionUser)return;fullCloudHydrating=true;try{
   const [b,e,c,p,m,s,f]=await Promise.all([
     supabaseClient.from('bookings').select('*').eq('trip_id',t.id),supabaseClient.from('expenses').select('*').eq('trip_id',t.id),supabaseClient.from('collections').select('*').eq('trip_id',t.id),supabaseClient.from('preparation_items').select('*').eq('trip_id',t.id),supabaseClient.from('map_places').select('*').eq('trip_id',t.id),supabaseClient.from('shopping_items').select('*').eq('trip_id',t.id),supabaseClient.from('pocket_foods').select('*').eq('trip_id',t.id)]);
-  if(!b.error){const type=await fcFirstCol('bookings',['booking_type','type','category']),title=await fcFirstCol('bookings',['title','name','booking_name']),details=await fcFirstCol('bookings',['details','detail','description','notes']);state.bookings=(b.data||[]).map(r=>({_cloudId:r.id,_createdBy:r.created_by,type:r[type]||'票券',title:r[title]||'',detail:r[details]||'',images:[]}));fullCloudLoadedIds.bookings=new Set((b.data||[]).map(r=>r.id))}
+  if(!b.error){
+    const type=await fcFirstCol('bookings',['booking_type','type','category']),title=await fcFirstCol('bookings',['title','name','booking_name']),details=await fcFirstCol('bookings',['details','detail','description','notes']);
+    const rows=b.data||[],assets=await fcLoadAttachments(rows.map(r=>r.id),['booking_photo']);
+    state.bookings=rows.map(r=>{
+      const meta=v34BookingReadDetail(details?r[details]:'');
+      const photos=assets[r.id]||[];
+      return {_cloudId:r.id,_createdBy:r.created_by,_clientId:meta.clientId,type:r[type]||'票券',title:r[title]||'',detail:meta.detail,images:photos.map(a=>a.signedUrl).filter(Boolean),_photoAssets:photos};
+    });
+    fullCloudLoadedIds.bookings=new Set(rows.map(r=>r.id));
+  }
   if(!e.error){
     const title=await fcFirstCol('expenses',['title','name','expense_title']);
     const amount=await fcFirstCol('expenses',['amount','price','total']);
@@ -5795,6 +5866,7 @@ function nitaRefreshBackupSummary(di,cloudRows=null,assetMap=null,map=null){
       const a=assetMap?.[r[map.id]]||{};
       return{
         name:r._label||r._place||"備用行程",
+        desc:r._description||"",
         nav:r._place||r._label||"",
         photo:(a.photos||[]).find(x=>x.signedUrl)?.signedUrl||""
       };
@@ -5802,6 +5874,7 @@ function nitaRefreshBackupSummary(di,cloudRows=null,assetMap=null,map=null){
   }else{
     items=(t.days[di].backup||[]).map(x=>({
       name:x.label||x.place||"備用行程",
+      desc:x.desc||"",
       nav:x.place||x.label||"",
       photo:(x.photos||[])[0]||""
     }));
@@ -5810,7 +5883,7 @@ function nitaRefreshBackupSummary(di,cloudRows=null,assetMap=null,map=null){
   sum.innerHTML=items.map((x,i)=>`
     <div class="backupSummaryItem${x.photo?"":" noPhoto"}">
       ${x.photo?`<img class="backupSummaryThumb" src="${escapeAttr(x.photo)}" alt="">`:""}
-      <div class="backupSummaryName">${escapeHtml(x.name)}</div>
+      <div class="backupSummaryText"><div class="backupSummaryName">${escapeHtml(x.name)}</div>${x.desc?`<div class="backupSummaryDesc">${escapeHtml(x.desc)}</div>`:""}</div>
       <button class="navMiniBtn backupSummaryNav" type="button" data-backup-summary-nav="${i}">導航</button>
     </div>
   `).join("")||'<div class="mini">目前沒有備用行程</div>';
@@ -5989,10 +6062,28 @@ function renderSchedulePage(){
     nitaSetSectionCollapsed(key,nextCollapsed);
 
     if(body)body.classList.toggle("hidden",nextCollapsed);
+    const summary=$("backupSummary");
+    if(summary)summary.classList.toggle("hidden",!nextCollapsed);
     if(btn){
       btn.classList.toggle("open",!nextCollapsed);
       btn.textContent=nextCollapsed?"⌃":"⌄";
     }
+
+    if(nextCollapsed){
+      if(t.supabase){
+        void (async()=>{
+          try{
+            const map=await cloudGetBackupSchema();
+            const rows=await cloudLoadBackupRows(di);
+            const assets=await cloudLoadBackupAssets(rows,map);
+            nitaRefreshBackupSummary(di,rows,assets,map);
+          }catch(err){
+            console.warn("備用行程摘要讀取失敗",err);
+            nitaRefreshBackupSummary(di,[],{},{});
+          }
+        })();
+      }else nitaRefreshBackupSummary(di);
+    }else if(summary)summary.innerHTML="";
 
     /* Do NOT rerender the full day page here.
        The current scroll position stays exactly where the user tapped. */
@@ -10267,6 +10358,7 @@ const V23_PREP_KEY="nitaPrepV23";
 const V23_DEFAULTS=["行前檢查","重要文件","3C產品","生活必備"];
 const V23_CAT_MARK="__NITA_PREP_CATEGORY__:";
 const V23_DEL_MARK="__NITA_PREP_DELETED__:";
+const V34_PREP_ITEM_MARK="__NITA_PREP_ITEM_V34__:";
 let v23Prep={categories:[...V23_DEFAULTS],items:[],categoryRows:{},deleted:[]};
 let v23PrepTrip="";
 
@@ -10327,8 +10419,21 @@ async function v23PrepHydrate(){
   const categoryRows={};
 
   for(const r of rows){
-    const text=String(r[c.text]||"").trim();
-    const cat=String((c.cat&&r[c.cat])||"生活必備").trim()||"生活必備";
+    let text=String(r[c.text]||"").trim();
+    let cat=String((c.cat&&r[c.cat])||"").trim();
+
+    if(text.startsWith(V34_PREP_ITEM_MARK)){
+      try{
+        const meta=JSON.parse(text.slice(V34_PREP_ITEM_MARK.length));
+        text=String(meta.text||"").trim();
+        if(!cat)cat=String(meta.category||"").trim();
+      }catch(_){/* Keep the original text so a damaged row is never silently lost. */}
+    }
+
+    if(!cat){
+      const local=v23Prep.items.find(x=>String(x.id||"")===String(r.id||""));
+      cat=String(local?.category||"生活必備").trim()||"生活必備";
+    }
 
     if(text.startsWith(V23_DEL_MARK))continue;
 
@@ -10362,7 +10467,7 @@ async function v23PrepHydrate(){
 async function v23PrepInsert(item){
   if(!v20CloudEditable())return;
   const c=await v23PrepCols(), p={trip_id:v20TripId()};
-  p[c.text]=item.text;
+  p[c.text]=c.cat?item.text:V34_PREP_ITEM_MARK+JSON.stringify({text:item.text,category:item.category});
   if(c.cat)p[c.cat]=item.category;
   if(c.checked)p[c.checked]=!!item.selected;
   if(c.note)p[c.note]=item.note||"";
@@ -10374,7 +10479,7 @@ async function v23PrepInsert(item){
 async function v23PrepUpdate(item){
   if(!v20CloudEditable()||!item.id)return;
   const c=await v23PrepCols(), p={};
-  p[c.text]=item.text;
+  p[c.text]=c.cat?item.text:V34_PREP_ITEM_MARK+JSON.stringify({text:item.text,category:item.category});
   if(c.cat)p[c.cat]=item.category;
   if(c.checked)p[c.checked]=!!item.selected;
   if(c.note)p[c.note]=item.note||"";
@@ -11020,8 +11125,9 @@ console.info("FINAL v25 rebuilt expense module loaded");
 })();
 </script>
 
-<!-- ===== FINAL v32：收藏文字與照片強制寫入 Supabase，依行程隔離 ===== -->
-<script>
+<!-- ===== FINAL v32 legacy tail：保留原碼供追溯，但不執行。
+     收藏功能由前方同作用域的 v16 canonical module 負責；舊尾段跨作用域覆寫會產生 ReferenceError。 ===== -->
+<script type="text/plain" data-disabled-legacy="v32-collection-tail">
 (()=>{
 "use strict";
 
@@ -11218,274 +11324,6 @@ fcSyncCollections=async function(){
 };
 
 console.info("FINAL v32 collection cloud persistence loaded");
-})();
-</script>
-
-<!-- ===== FINAL v33：準備分類、預訂照片、備用行程收合摘要 ===== -->
-<script>
-(()=>{
-"use strict";
-
-/* ---------- 1. Preparation category persistence ---------- */
-const V33_PREP_ITEM_MARK="__NITA_PREP_ITEM_V33__:";
-function v33PrepPack(text,category){
-  return V33_PREP_ITEM_MARK+JSON.stringify({text:String(text||""),category:String(category||"生活必備")});
-}
-function v33PrepUnpack(raw,fallbackCategory){
-  const value=String(raw||"");
-  if(value.startsWith(V33_PREP_ITEM_MARK)){
-    try{
-      const x=JSON.parse(value.slice(V33_PREP_ITEM_MARK.length));
-      return {text:String(x.text||""),category:String(x.category||fallbackCategory||"生活必備")};
-    }catch(_){ }
-  }
-  return {text:value,category:String(fallbackCategory||"生活必備")};
-}
-
-v23PrepHydrate=async function(){
-  const tripId=v20TripId();
-  if(!v20CloudEditable())return;
-  const {data,error}=await supabaseClient.from("preparation_items").select("*").eq("trip_id",tripId).order("created_at",{ascending:true});
-  if(error)throw error;
-  const c=await v23PrepCols();
-  if(!c.text)throw new Error("preparation_items 找不到用品文字欄位");
-  const rows=data||[];
-  const deleted=[...new Set(rows.map(r=>String(r[c.text]||""))
-    .filter(t=>t.startsWith(V23_DEL_MARK)).map(t=>t.slice(V23_DEL_MARK.length).trim()).filter(Boolean))];
-  const cats=V23_DEFAULTS.filter(x=>!deleted.includes(x)),items=[],categoryRows={};
-
-  for(const r of rows){
-    const raw=String(r[c.text]||"").trim();
-    const nativeCat=String((c.cat&&r[c.cat])||"").trim();
-    if(raw.startsWith(V23_DEL_MARK))continue;
-    if(raw.startsWith(V23_CAT_MARK)||raw.startsWith("__NITA_CATEGORY__:")||raw.includes("__NITA_CATEGORY__")){
-      const name=raw.startsWith(V23_CAT_MARK)?raw.slice(V23_CAT_MARK.length).trim():raw.split("__NITA_CATEGORY__:").pop().trim();
-      const finalName=name||nativeCat;
-      if(finalName&&!deleted.includes(finalName)&&!cats.includes(finalName))cats.push(finalName);
-      if(finalName)categoryRows[finalName]=r.id;
-      continue;
-    }
-    const decoded=v33PrepUnpack(raw,nativeCat||"生活必備");
-    const cat=decoded.category||"生活必備";
-    if(deleted.includes(cat))continue;
-    if(cat&&!cats.includes(cat))cats.push(cat);
-    if(decoded.text)items.push({
-      id:r.id,text:decoded.text,category:cat,
-      selected:c.checked?!!r[c.checked]:false,
-      note:c.note?(r[c.note]||""):""
-    });
-  }
-  if(currentTrip()?.id!==tripId)return;
-  v23Prep={categories:[...new Set(cats)],items,categoryRows,deleted};
-  v23PrepSaveLocal();
-};
-
-v23PrepInsert=async function(item){
-  const tripId=v20TripId();
-  if(!v20CloudEditable())throw new Error("尚未連上準備清單雲端");
-  const c=await v23PrepCols(),p={trip_id:tripId};
-  p[c.text]=c.cat?item.text:v33PrepPack(item.text,item.category);
-  if(c.cat)p[c.cat]=item.category;
-  if(c.checked)p[c.checked]=!!item.selected;
-  if(c.note)p[c.note]=item.note||"";
-  const {data,error}=await supabaseClient.from("preparation_items").insert(p).select("*").single();
-  if(error)throw error;
-  if(!data?.id)throw new Error("準備用品沒有成功寫入 Supabase");
-  item.id=data.id;v23PrepSaveLocal();
-};
-
-v23PrepUpdate=async function(item){
-  const tripId=v20TripId();
-  if(!v20CloudEditable()||!item.id)throw new Error("目前無法更新準備用品");
-  const c=await v23PrepCols(),p={};
-  p[c.text]=c.cat?item.text:v33PrepPack(item.text,item.category);
-  if(c.cat)p[c.cat]=item.category;
-  if(c.checked)p[c.checked]=!!item.selected;
-  if(c.note)p[c.note]=item.note||"";
-  const {data,error}=await supabaseClient.from("preparation_items")
-    .update(p).eq("id",item.id).eq("trip_id",tripId).select("id").single();
-  if(error)throw error;
-  if(!data?.id)throw new Error("準備用品分類沒有成功更新");
-};
-
-/* ---------- 2. Booking text + photo cloud persistence ---------- */
-const v33BookingLoadedByTrip=new Map();
-function v33BookingLoadedSet(tripId){
-  if(!v33BookingLoadedByTrip.has(tripId))v33BookingLoadedByTrip.set(tripId,new Set());
-  return v33BookingLoadedByTrip.get(tripId);
-}
-async function v33BookingCols(){
-  return {
-    type:await fcFirstCol("bookings",["booking_type","type","category"]),
-    title:await fcFirstCol("bookings",["title","name","booking_name"]),
-    details:await fcFirstCol("bookings",["details","detail","description","notes"])
-  };
-}
-async function v33LoadBookingAssets(tripId,ids){
-  const map={};ids.forEach(id=>map[id]=[]);if(!ids.length)return map;
-  const {data,error}=await supabaseClient.from("attachments")
-    .select("id,parent_id,file_path,uploaded_by,attachment_type")
-    .eq("trip_id",tripId).eq("attachment_type","booking_photo").in("parent_id",ids);
-  if(error)throw error;
-  for(const a of data||[]){
-    const signed=await supabaseClient.storage.from("travel-images").createSignedUrl(a.file_path,3600);
-    if(signed.error)throw signed.error;
-    (map[a.parent_id]||(map[a.parent_id]=[])).push({...a,signedUrl:signed.data?.signedUrl||""});
-  }
-  return map;
-}
-async function v33HydrateBookings(){
-  const trip=currentTrip(),tripId=trip?.id;
-  if(!tripId||!trip?.supabase||!supabaseSessionUser||!supabaseClient)return;
-  try{
-    const cols=await v33BookingCols();
-    const {data,error}=await supabaseClient.from("bookings").select("*").eq("trip_id",tripId);
-    if(error)throw error;
-    const rows=data||[],assets=await v33LoadBookingAssets(tripId,rows.map(r=>r.id));
-    const bookings=rows.map(r=>({
-      _cloudId:r.id,_createdBy:r.created_by,
-      type:cols.type?(r[cols.type]||"票券"):"票券",
-      title:cols.title?(r[cols.title]||""):"",
-      detail:cols.details?(r[cols.details]||""):"",
-      images:(assets[r.id]||[]).map(a=>a.signedUrl).filter(Boolean),
-      _photoAssets:assets[r.id]||[]
-    }));
-    if(currentTrip()?.id!==tripId)return;
-    state.bookings=bookings;
-    const loaded=v33BookingLoadedSet(tripId);loaded.clear();rows.forEach(r=>loaded.add(r.id));
-    fullCloudLoadedIds.bookings=new Set(loaded);
-    __fcOriginalSave("travelBookingsV13",state.bookings);
-    renderBookings();if(state.currentDay==="info")renderFlight();
-  }catch(err){
-    console.error("預訂雲端載入失敗",err);
-    toast("預訂雲端載入失敗，已保留目前畫面資料");
-  }
-}
-async function v33UploadBookingPhoto(tripId,item,dataUrl){
-  const blob=await (await fetch(dataUrl)).blob();
-  const ext=(blob.type.split("/")[1]||"jpg").replace("jpeg","jpg");
-  const path=`${tripId}/${supabaseSessionUser.id}/booking-${item._cloudId}-${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
-  const up=await supabaseClient.storage.from("travel-images").upload(path,blob,{contentType:blob.type||"image/jpeg",upsert:false});
-  if(up.error)throw up.error;
-  const inserted=await supabaseClient.from("attachments").insert({
-    trip_id:tripId,attachment_type:"booking_photo",parent_id:item._cloudId,
-    file_path:path,file_name:path.split("/").pop(),mime_type:blob.type||"image/jpeg",caption:item.title||""
-  }).select("id,parent_id,file_path,uploaded_by,attachment_type").single();
-  if(inserted.error){await supabaseClient.storage.from("travel-images").remove([path]);throw inserted.error}
-  const signed=await supabaseClient.storage.from("travel-images").createSignedUrl(path,3600);
-  if(signed.error)throw signed.error;
-  return {...inserted.data,signedUrl:signed.data?.signedUrl||""};
-}
-async function v33SaveBookingCloud(item,photos){
-  const trip=currentTrip(),tripId=trip?.id;
-  if(!tripId||!trip?.supabase||!supabaseSessionUser||!supabaseClient)throw new Error("尚未連上預訂雲端");
-  if(!cloudCanEditTrip(tripId))throw new Error("目前帳號沒有這個行程的編輯權限");
-  const cols=await v33BookingCols(),payload={};
-  if(cols.type)payload[cols.type]=item.type||"票券";
-  if(cols.title)payload[cols.title]=item.title||"";
-  if(cols.details)payload[cols.details]=item.detail||"";
-  const wasNew=!item._cloudId;
-  if(wasNew){
-    const q=await supabaseClient.from("bookings").insert({trip_id:tripId,...payload}).select("*").single();
-    if(q.error)throw q.error;item._cloudId=q.data?.id;item._createdBy=q.data?.created_by;
-  }else{
-    const q=await supabaseClient.from("bookings").update(payload).eq("id",item._cloudId).eq("trip_id",tripId).select("id").single();
-    if(q.error)throw q.error;
-  }
-  if(!item._cloudId)throw new Error("預訂文字沒有成功寫入 Supabase");
-  const old=[...(item._photoAssets||[])];
-  const remote=photos.filter(x=>!String(x).startsWith("data:image/")),keep=new Set(remote);
-  const kept=old.filter(a=>keep.has(a.signedUrl)),uploaded=[];
-  try{
-    for(const dataUrl of photos.filter(x=>String(x).startsWith("data:image/")))uploaded.push(await v33UploadBookingPhoto(tripId,item,dataUrl));
-  }catch(err){
-    for(const a of uploaded){
-      await supabaseClient.from("attachments").delete().eq("id",a.id).eq("trip_id",tripId);
-      await supabaseClient.storage.from("travel-images").remove([a.file_path]);
-    }
-    if(wasNew){await supabaseClient.from("bookings").delete().eq("id",item._cloudId).eq("trip_id",tripId);item._cloudId=undefined}
-    throw err;
-  }
-  for(const a of old.filter(a=>!keep.has(a.signedUrl))){
-    const del=await supabaseClient.from("attachments").delete().eq("id",a.id).eq("trip_id",tripId).select("id");
-    if(del.error)throw del.error;
-    await supabaseClient.storage.from("travel-images").remove([a.file_path]);
-  }
-  item._photoAssets=[...kept,...uploaded];
-  let i=0;item.images=photos.map(x=>String(x).startsWith("data:image/")?(uploaded[i++]?.signedUrl||""):x).filter(Boolean);
-  v33BookingLoadedSet(tripId).add(item._cloudId);
-  fullCloudLoadedIds.bookings=new Set(v33BookingLoadedSet(tripId));
-}
-
-fcSyncBookings=async function(){
-  const trip=currentTrip(),tripId=trip?.id;
-  if(!tripId||!trip?.supabase||!supabaseSessionUser||!supabaseClient||!cloudCanEditTrip(tripId))return;
-  const items=[...(state.bookings||[])];
-  for(const item of items){if(currentTrip()?.id!==tripId)return;await v33SaveBookingCloud(item,item.images||[])}
-  const keep=new Set(items.map(x=>x._cloudId).filter(Boolean));
-  for(const id of [...v33BookingLoadedSet(tripId)]){
-    if(keep.has(id))continue;
-    const at=await supabaseClient.from("attachments").select("id,file_path").eq("trip_id",tripId).eq("parent_id",id).eq("attachment_type","booking_photo");
-    if(at.error)throw at.error;
-    const del=await supabaseClient.from("bookings").delete().eq("id",id).eq("trip_id",tripId);
-    if(del.error)throw del.error;
-    for(const a of at.data||[]){await supabaseClient.from("attachments").delete().eq("id",a.id).eq("trip_id",tripId);await supabaseClient.storage.from("travel-images").remove([a.file_path])}
-    v33BookingLoadedSet(tripId).delete(id);
-  }
-};
-
-v12OpenBookingForm=function(type){
-  const photos=[];
-  openForm(`新增${type}`,`
-    <div class="cleanEditForm">
-      <div class="field"><span class="label">名稱 / 編號</span><input class="input" id="v33BookingTitle" placeholder="輸入名稱"></div>
-      <div class="field"><span class="label">日期 / 時間 / 備註</span><textarea class="input" id="v33BookingDetail" rows="3" placeholder="輸入預訂內容"></textarea></div>
-      <div class="field"><span class="label">照片</span><label class="bookingV10File">＋ 選擇照片<input id="v33BookingFiles" type="file" multiple accept="image/*" hidden></label><div class="v14BookingPreview" id="v33BookingPreview"></div><div class="cloudPhotoStatus" id="v33BookingStatus"></div></div>
-    </div>`,async()=>{
-      const title=$("v33BookingTitle").value.trim();if(!title){toast("請輸入名稱");return false}
-      const item={type,title,detail:$("v33BookingDetail").value,images:[...photos],_photoAssets:[]};
-      try{
-        if(currentTrip()?.supabase&&supabaseSessionUser&&supabaseClient){
-          $("v33BookingStatus").textContent="正在上傳照片並儲存雲端…";
-          await v33SaveBookingCloud(item,photos);
-        }
-        state.bookings.unshift(item);__fcOriginalSave("travelBookingsV13",state.bookings);renderBookings();toast("已新增預訂");return true;
-      }catch(err){console.error(err);toast("預訂儲存失敗："+(err?.message||String(err)));$("v33BookingStatus").textContent="儲存失敗，請再試一次";return false}
-    });
-  const redraw=()=>renderPhotoThumbs(photos,$("v33BookingPreview"),i=>{photos.splice(i,1);redraw()});redraw();
-  $("v33BookingFiles").onchange=async e=>{
-    const files=[...e.target.files];e.target.value="";$("v33BookingStatus").textContent=files.length?"正在壓縮照片…":"";
-    for(const f of files){const img=await compressImage(f,1200,.8);if(img)photos.push(img)}
-    $("v33BookingStatus").textContent="";redraw();
-  };
-};
-
-const v33BaseHydrate=fullCloudHydrateCurrentTrip;
-fullCloudHydrateCurrentTrip=async function(){
-  const tripId=currentTrip()?.id;await v33BaseHydrate();
-  if(tripId&&currentTrip()?.id===tripId)await v33HydrateBookings();
-};
-
-/* ---------- 3. Backup section collapsed summary ---------- */
-const v33BaseRenderSchedulePage=renderSchedulePage;
-renderSchedulePage=function(){
-  v33BaseRenderSchedulePage();
-  if(state.currentDay==="info")return;
-  const t=currentTrip(),di=state.currentDay,toggle=$("backupToggle");if(!toggle)return;
-  toggle.onclick=e=>{
-    if(e.target.closest("input,label"))return;
-    const key=`backupSection:${t.id}:${di}`;
-    const collapsed=!nitaSectionCollapsed(key,false);
-    nitaSetSectionCollapsed(key,collapsed);
-    $("backupBody")?.classList.toggle("hidden",collapsed);
-    const summary=$("backupSummary");if(summary)summary.classList.toggle("hidden",!collapsed);
-    const btn=toggle.querySelector(".collapseBtn");if(btn){btn.classList.toggle("open",!collapsed);btn.textContent=collapsed?"⌄":"⌃"}
-    if(collapsed)void renderBackup(di);
-    else if(summary)summary.innerHTML="";
-  };
-};
-
-console.info("FINAL v33 prep categories, booking photos and backup summaries loaded");
 })();
 </script>
 
