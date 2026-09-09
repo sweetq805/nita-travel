@@ -136,7 +136,7 @@ input,textarea,select{outline:none}
   background:rgba(255,253,251,.97);
   border:1px solid #E6DAD4;
   border-radius:12px;
-  box-shadow:0 6px 18px rgba(83,68,59,.12);
+  box-shadow:none;
   color:#59524C;
   padding:6px 9px;
   font-size:10px;
@@ -1073,7 +1073,7 @@ body.loggedOutMode #adminMembers,
 /* MAP */
 #newMarkerType{max-width:230px!important}
 #mapStatus{display:none!important}
-.mapSavedFilterBar{display:flex;gap:7px;width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-x:auto!important;overflow-y:hidden;margin:8px 0 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x}
+.mapSavedFilterBar{display:flex;gap:7px;width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow-x:auto!important;overflow-y:hidden;margin:8px 0 10px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
 .mapSavedFilterBar::-webkit-scrollbar{display:none}
 .mapSavedFilterBar .nitaV10Tab{flex:0 0 auto!important;white-space:nowrap!important}
 #locateBtn.liveOn,#dayLocateBtn.liveOn{background:#D3A9A6!important;color:#fff!important}
@@ -7921,7 +7921,15 @@ renderMapPage=function(){
   const bar=document.createElement("div");bar.className="mapSavedFilterBar";
   bar.innerHTML=`<button class="nitaV10Tab${v13MapFilter==="all"?" active":""}" data-cat="all" type="button">全部</button>${cats.map(c=>`<button class="nitaV10Tab${v13MapFilter===c?" active":""}" data-cat="${escapeAttr(c)}" type="button">${escapeHtml(c)}</button>`).join("")}`;
   list.parentNode.insertBefore(bar,list);
-  bar.querySelectorAll("[data-cat]").forEach(b=>v13Bind(b,()=>{v13MapFilter=b.dataset.cat;renderMapPage()}));
+  bar.querySelectorAll("[data-cat]").forEach(b=>{
+    b.style.touchAction="manipulation";
+    b.onclick=e=>{
+      e.preventDefault();
+      e.stopPropagation();
+      v13MapFilter=b.dataset.cat||"all";
+      renderMapPage();
+    };
+  });
   v13RenderMarkerList();
 };
 
