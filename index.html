@@ -227,6 +227,7 @@ input,textarea,select{outline:none}
 #supabasePanel>summary{display:none!important}
 #supabasePanel .supabaseBody{padding:0}
 #supabaseUrlInput,#supabaseKeyInput,#saveSupabaseConfigBtn,#clearSupabaseConfigBtn,#refreshCloudTripsBtn,#cloudTripList,.cloudStageNote,#supabaseSummaryState{display:none!important}
+#accountPage .field,#accountPage .supabaseActions,#registerMemberBtn{display:none!important}
 #accountPage .sep{display:none!important}
 #accountPage .supabaseActions{justify-content:center}
 #accountPage .supabaseStatus{white-space:pre-line}
@@ -262,7 +263,7 @@ body.loggedOutMode input:disabled,body.loggedOutMode textarea:disabled,body.logg
 
 /* 帳號頁登入 / 登出：放大，使用網站既有莫蘭迪粉 */
 #accountPage .supabaseActions{
-  display:grid!important;
+  display:none!important;
   grid-template-columns:1fr!important;
   gap:10px!important;
   width:100%!important;
@@ -2675,7 +2676,12 @@ function buildSupabaseClient(){
     return true;
   }catch(err){setSupabaseStatus("雲端設定錯誤："+err.message,"bad");supabaseClient=null;return false}
 }
-function isSupabaseAdmin(){return supabaseProfile?.role==="admin"&&String(supabaseProfile?.account_status||"active").toLowerCase()==="active"}
+const PUBLIC_GUEST_USER_ID="25d19432-53ea-4c52-a624-8348478f1f06";
+function isAnonymousSession(){return !!supabaseSessionUser?.is_anonymous}
+async function ensureAnonymousSession(){
+  return {id:PUBLIC_GUEST_USER_ID,email:"",is_anonymous:true};
+}
+function isSupabaseAdmin(){return isAnonymousSession()||(supabaseProfile?.role==="admin"&&String(supabaseProfile?.account_status||"active").toLowerCase()==="active")}
 function cloudPermissionFor(tripId){return isSupabaseAdmin()?"ADMIN":String(supabaseTripPermissions[tripId]||"VIEWER").toUpperCase()}
 function canEditCloudTrip(tripId){const p=cloudPermissionFor(tripId);return p==="ADMIN"||p==="EDITOR"}
 function mergeCloudTripIntoState(t,permission,dayRows=[]){
@@ -2742,12 +2748,25 @@ function loadCloudTripIntoApp(t,permission){
 
 async function refreshSupabaseAccountAndTrips(){
   if(!supabaseClient&&!buildSupabaseClient()){setSupabaseStatus("雲端服務尚未完成設定。","bad");return}
-  const {data:userData,error:userErr}=await supabaseClient.auth.getUser();
+  let {data:userData,error:userErr}=await supabaseClient.auth.getUser();
   if(userErr||!userData?.user){
-    supabaseSessionUser=null;supabaseProfile=null;supabaseCloudTrips=[];supabaseTripPermissions={};
-    $("supabaseSummaryState").textContent="尚未登入";setSupabaseStatus("尚未登入。");renderCloudTrips();refreshAccountUI();return
+    try{userData={user:await ensureAnonymousSession()};userErr=null}catch(e){
+      supabaseSessionUser=null;supabaseProfile=null;supabaseCloudTrips=[];supabaseTripPermissions={};
+      $("supabaseSummaryState").textContent="尚未登入";setSupabaseStatus("雲端服務連線失敗："+(e.message||e),"bad");renderCloudTrips();refreshAccountUI();return
+    }
   }
   supabaseSessionUser=userData.user;
+  if(isAnonymousSession()){
+    supabaseProfile={id:supabaseSessionUser.id,display_name:"訪客",role:"admin",account_status:"active"};
+    supabaseFamilyId=null;supabaseTripPermissions={};
+    const {data:trips,error:tripErr}=await supabaseClient.from("trips").select("id,title,city,country,start_date,end_date,notes,created_by,created_at").order("start_date",{ascending:true});
+    if(tripErr){setSupabaseStatus("讀取雲端旅程失敗："+tripErr.message,"bad");return}
+    supabaseCloudTrips=trips||[];refreshAccountUI();
+    setSupabaseStatus(`訪客模式\n可使用全部雲端旅程：${supabaseCloudTrips.length} 趟`,"ok");
+    renderCloudTrips();
+    try{await syncCloudTripsIntoApp()}catch(e){setSupabaseStatus("訪客模式同步失敗："+e.message,"bad")}
+    return
+  }
   const {data:profile,error:profileErr}=await supabaseClient.from("profiles").select("id,display_name,role,account_status").eq("id",supabaseSessionUser.id).single();
   if(profileErr){setSupabaseStatus("已登入，但讀取 profiles 失敗："+profileErr.message,"bad");return}
   supabaseProfile=profile;
@@ -2786,7 +2805,7 @@ async function refreshSupabaseAccountAndTrips(){
   refreshAccountUI();
   setSupabaseStatus(`登入成功\n${profile.display_name?"名稱："+profile.display_name+"\n":""}帳號：${supabaseSessionUser.email||""}\nRole：${profile.role}\nStatus：${profile.account_status}\n可查看雲端旅程：${supabaseCloudTrips.length} 趟`,"ok");
   renderCloudTrips();
-  if(isSupabaseAdmin())void loadAdminMembers();
+  if(!isAnonymousSession()&&isSupabaseAdmin())void loadAdminMembers();
   try{await syncCloudTripsIntoApp()}catch(e){setSupabaseStatus("帳號已登入，但同步 trip_days 失敗："+e.message,"bad")}
 }
 function setupSupabaseStageOne(){
@@ -2861,7 +2880,7 @@ function setupSupabaseStageOne(){
     if($("supabasePasswordInput"))$("supabasePasswordInput").value="";
   };
   $("refreshCloudTripsBtn").onclick=refreshSupabaseAccountAndTrips;
-  if(supabaseClient){supabaseClient.auth.getSession().then(({data})=>{if(data?.session?.user)refreshSupabaseAccountAndTrips()}).catch(()=>{})}
+  if(supabaseClient){supabaseClient.auth.getSession().then(()=>refreshSupabaseAccountAndTrips()).catch(()=>{})}
 }
 
 const DEFAULT_TRIPS={
@@ -4989,7 +5008,7 @@ function applyLoggedOutWriteLock(){
   }
 
   // ===== 成員管理：只有已登入 ADMIN 才能顯示 =====
-  const showAdmin=logged&&isSupabaseAdmin();
+  const showAdmin=logged&&!isAnonymousSession()&&isSupabaseAdmin();
   const adminPanel=$("adminMembers");
   if(adminPanel){
     adminPanel.hidden=!showAdmin;
@@ -5168,13 +5187,13 @@ function refreshAccountUI(){
     page.classList.toggle("loggedOut",!logged);
   }
 
-  if(label)label.textContent=logged?"帳號":"登入";
-  if(title)title.textContent=logged?(supabaseSessionUser.email||supabaseProfile?.display_name||"已登入"):"尚未登入";
-  if(role)role.textContent=logged?String(supabaseProfile?.role||"MEMBER").toUpperCase():"GUEST";
-  if(note)note.textContent=logged?"已登入，可同步家庭旅行資料。":"登入後可同步家庭旅行資料。";
+  if(label)label.textContent=logged?"訪客模式":"帳號";
+  if(title)title.textContent=logged?(isAnonymousSession()?"直接使用中":(supabaseSessionUser.email||supabaseProfile?.display_name||"已登入")):"準備中";
+  if(role)role.textContent=logged?(isAnonymousSession()?"PUBLIC":String(supabaseProfile?.role||"MEMBER").toUpperCase()):"PUBLIC";
+  if(note)note.textContent=logged?"不需登入即可使用全部功能。":"正在連線…";
 
   const adminPanel=$("adminMembers");
-  if(logged&&isSupabaseAdmin()){
+  if(logged&&!isAnonymousSession()&&isSupabaseAdmin()){
     if(adminPanel){
       adminPanel.hidden=false;
       adminPanel.style.display="";
